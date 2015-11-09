@@ -25,7 +25,7 @@ func (b *board) SolveHiddenSingle() error {
 			return nil
 		}
 
-		ops := []func(int, func(int, int) error) error{
+		ops := []containerOperator{
 			b.operateOnRow,
 			b.operateOnColumn,
 			b.operateOnBox,

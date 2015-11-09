@@ -17,7 +17,8 @@ type coords struct {
 	box int
 }
 
-type inspector func(int, func(int, int) error) error
+type inspector func(int, int) error
+type containerOperator func(int, inspector) error
 
 func getCoords(pos int) coords {
 	boxRow := ((pos / 9) / 3)
@@ -27,7 +28,7 @@ func getCoords(pos int) coords {
 	return coords{row: pos / 9, col: pos % 9, box: box}
 }
 
-func (b *board) operateOnRow(pos int, op func(target int, source int) error) error {
+func (b *board) operateOnRow(pos int, op inspector) error {
 	startRow := (pos / 9) * 9
 	for r := startRow; r < startRow+9; r++ {
 		if err := op(r, pos); err != nil {
@@ -37,7 +38,7 @@ func (b *board) operateOnRow(pos int, op func(target int, source int) error) err
 	return nil
 }
 
-func (b *board) operateOnColumn(pos int, op func(target int, source int) error) error {
+func (b *board) operateOnColumn(pos int, op inspector) error {
 	for c := pos % 9; c < 81; c += 9 {
 		if err := op(c, pos); err != nil {
 			return err
@@ -46,7 +47,7 @@ func (b *board) operateOnColumn(pos int, op func(target int, source int) error) 
 	return nil
 }
 
-func (b *board) operateOnBox(pos int, op func(target int, source int) error) error {
+func (b *board) operateOnBox(pos int, op inspector) error {
 	startRow := ((pos / 9) / 3) * 3
 	startCol := ((pos % 9) / 3) * 3
 	for r := startRow; r < startRow+3; r++ {
@@ -60,7 +61,7 @@ func (b *board) operateOnBox(pos int, op func(target int, source int) error) err
 	return nil
 }
 
-func (b *board) operateOnRCB(pos int, op func(target int, source int) error) error {
+func (b *board) operateOnRCB(pos int, op inspector) error {
 	if err := b.operateOnRow(pos, op); err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func (b *board) operateOnRCB(pos int, op func(target int, source int) error) err
 	return nil
 }
 
-func (b *board) operateOnCommon(pos1 int, pos2 int, op func(target int, source int) error) error {
+func (b *board) operateOnCommon(pos1 int, pos2 int, op inspector) error {
 	coords1 := getCoords(pos1)
 	coords2 := getCoords(pos2)
 

@@ -17,7 +17,7 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 
 		dims := []struct {
 			isRow bool
-			op    func(int, func(int, int) error) error
+			op    containerOperator
 		}{
 			{isRow: true, op: b.operateOnRow},
 			{isRow: false, op: b.operateOnColumn},

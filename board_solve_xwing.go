@@ -32,8 +32,8 @@ func (b *board) SolveXWing() error {
 		c1 := getCoords(i)
 
 		dims := []struct {
-			op        func(int, func(int, int) error) error
-			op2       func(int, func(int, int) error) error
+			op        containerOperator
+			op2       containerOperator
 			isAligned func(coords, coords) bool
 		}{
 			{

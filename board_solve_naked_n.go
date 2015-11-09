@@ -23,7 +23,7 @@ func (b *board) SolveNakedN(n int) error {
 			continue
 		}
 
-		ops := []func(int, func(int, int) error) error{
+		ops := []containerOperator{
 			b.operateOnRow,
 			b.operateOnColumn,
 			b.operateOnBox,

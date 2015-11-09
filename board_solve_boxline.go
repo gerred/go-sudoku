@@ -42,7 +42,7 @@ func (b *board) SolveBoxLine() error {
 
 		dims := []struct {
 			pickList  []int
-			op        func(int, func(int, int) error) error
+			op        containerOperator
 			canRemove func(int) bool
 		}{
 			// rows

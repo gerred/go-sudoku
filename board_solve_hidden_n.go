@@ -37,7 +37,7 @@ func (b *board) SolveHiddenN(n int) error {
 			return nil
 		}
 
-		ops := []func(int, func(int, int) error) error{
+		ops := []containerOperator{
 			b.operateOnRow,
 			b.operateOnColumn,
 			b.operateOnBox,
@@ -57,7 +57,7 @@ func (b *board) SolveHiddenN(n int) error {
 	return nil
 }
 
-func (b *board) checkHiddenPermutations(n int, source int, op func(int, func(int, int) error) error, lists [][]int) error {
+func (b *board) checkHiddenPermutations(n int, source int, op containerOperator, lists [][]int) error {
 	for _, list := range lists {
 		var sumBits uint
 		for _, pos := range list {
