@@ -46,7 +46,13 @@ func (b *board) runSolvers() error {
 	var err error
 	var changed bool
 
+	printOnNextIteration := false
 	for !b.isSolved() {
+		if printOnNextIteration {
+			b.PrintHints()
+			printOnNextIteration = false
+		}
+
 		fmt.Println("--- NAKED SINGLE")
 		if changed, err = b.runSolver(b.SolveNakedSingle); err != nil {
 			return err
@@ -143,7 +149,7 @@ func (b *board) runSolvers() error {
 			continue
 		}
 
-		fmt.Println("--- XWING")
+		fmt.Println("--- X-WING")
 		if changed, err = b.runSolver(b.SolveXWing); err != nil {
 			return err
 		}
@@ -151,11 +157,13 @@ func (b *board) runSolvers() error {
 			continue
 		}
 
-		// TODO: remove, temp to cleanup SWORDFISH candidates
-		fmt.Println("*****************************************")
-		b.PrintHints()
-		fmt.Println("*****************************************")
-		// END TODO
+		fmt.Println("--- Y-WING")
+		if changed, err = b.runSolver(b.SolveYWing); err != nil {
+			return err
+		}
+		if changed {
+			continue
+		}
 
 		fmt.Println("--- SWORDFISH")
 		if changed, err = b.runSolver(b.SolveSwordFish); err != nil {
@@ -165,6 +173,23 @@ func (b *board) runSolvers() error {
 			continue
 		}
 
+		fmt.Println("*****************************************")
+		b.PrintHints()
+		b.PrintURL()
+		fmt.Println("*****************************************")
+
+		printOnNextIteration = true
+
+		fmt.Println("--- XY-Chain")
+		if changed, err = b.runSolver(b.SolveXYChain); err != nil {
+			return err
+		}
+		if changed {
+			//break
+			continue
+		}
+
+		// TODO: Trial and Error
 		break
 	}
 
@@ -183,10 +208,10 @@ func (b *board) SolvePosition(pos int, val uint) error {
 
 	b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
 
-	if !b.loading {
+	/*if !b.loading {
 		b.Print()
 		b.PrintHints()
-	}
+	}*/
 
 	if err := b.Validate(); err != nil {
 		return fmt.Errorf("%#v val:%d - %s", getCoords(pos), val, err)
@@ -196,9 +221,9 @@ func (b *board) SolvePosition(pos int, val uint) error {
 		return err
 	}
 
-	if !b.loading {
+	/*if !b.loading {
 		b.PrintHints()
-	}
+	}*/
 
 	return nil
 }
@@ -226,6 +251,7 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 		b.blits[targetPos] = newBlit
 		delta := oldBlit & ^newBlit
 		b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
+		return b.Validate()
 	}
 	return nil
 }
