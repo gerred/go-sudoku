@@ -61,7 +61,8 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 
 					leftOver := sumBits & ^sumNegateBits
 					nbits := bits.GetNumberOfSetBits(leftOver)
-					if nbits != 2 && nbits != 3 {
+					//if nbits != 2 && nbits != 3 {
+					if nbits == 0 || nbits > 3 {
 						continue
 					}
 
