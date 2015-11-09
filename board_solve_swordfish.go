@@ -79,7 +79,7 @@ func (b *board) SolveSwordFish() error {
 			nextContainer: func(cur int) int {
 				// next start column index
 				next := cur + 1
-				if cur >= 9 {
+				if next >= 9 {
 					return -1
 				}
 				return next
@@ -307,6 +307,17 @@ func (b *board) swordfishGetPermutations(dim swordfishOperation, mustOverlap []i
 	}
 
 	tmpPerms := swordfishGetTwosAndThrees(candidates)
+
+	// TODO: debug, look for dupes between mustOverlap and tmpPerms
+	/*fmt.Printf("--------------------\n")
+	fmt.Printf("blockType:   %s\n", dim.blockType)
+	fmt.Printf("mustOverlap: %#2v\n", mustOverlap)
+	fmt.Printf("tmpPerms:    %#2v\n", tmpPerms)
+	fmt.Printf("pos:         %d\n", pos)
+	fmt.Printf("nextPos:     %d\n", nextPos)
+	fmt.Printf("--------------------\n")*/
+	// END debug
+
 	maxMisses := dim.maxMisses(mustOverlap)
 	if maxMisses < 0 {
 		return perms, nil
@@ -356,20 +367,24 @@ func swordfishGetCandidatePermutations(orig map[uint][]int) map[uint][][]int {
 }
 
 func swordfishGetTwosAndThrees(v []int) [][]int {
-	var list [][]int
+	var emptyList [][]int
 
 	fours := getPermutations(4, v, []int{})
 	if len(fours) != 0 {
-		return list
+		return emptyList
 	}
 
 	threes := getPermutations(3, v, []int{})
+	if len(threes) != 0 {
+		return threes
+	}
+
 	twos := getPermutations(2, v, []int{})
+	if len(twos) != 0 {
+		return twos
+	}
 
-	list = append(list, threes...)
-	list = append(list, twos...)
-
-	return list
+	return emptyList
 }
 
 func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set2 []int, set3 []int) (bool, error) {
