@@ -114,24 +114,26 @@ func getBoard(fileName string) (*board, error) {
 		return nil, err
 	}
 
+	return loadBoard(b)
+}
+
+func loadBoard(b []byte) (*board, error) {
 	b = bytes.Replace(b, []byte{'\r'}, []byte{}, -1)
-	b = bytes.Replace(b, []byte{'\n'}, []byte{' '}, -1)
-	b = bytes.Replace(b, []byte{' ', ' '}, []byte{' '}, -1)
+	b = bytes.Replace(b, []byte{'\n'}, []byte{}, -1)
+	b = bytes.Replace(b, []byte{' '}, []byte{}, -1)
 
 	board := &board{loading: true}
 	for i := 0; i < 81; i++ {
 		board.blits[i] = 0x1FF
 	}
 
-	pos := 0
-	for i := 0; i < 162; i += 2 {
-		if b[i] != '_' {
+	for i := 0; i < 81; i++ {
+		if b[i] != '_' && b[i] != '0' {
 			val := uint(b[i] - 48)
-			if err = board.SolvePosition(pos, val); err != nil {
+			if err := board.SolvePosition(i, val); err != nil {
 				return board, err
 			}
 		}
-		pos++
 	}
 
 	board.Print()
@@ -154,4 +156,16 @@ func (b *board) numSolved() int {
 
 func (b *board) isSolved() bool {
 	return b.numSolved() == 81
+}
+
+func intersect(a []int, b []int) []int {
+	var list []int
+	for _, i := range a {
+		for _, j := range b {
+			if i == j {
+				list = append(list, i)
+			}
+		}
+	}
+	return list
 }
