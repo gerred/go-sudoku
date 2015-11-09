@@ -16,22 +16,26 @@ func TestBoards(t *testing.T) {
 		"./test_files/08_hidden_quint_188899.txt",
 		"./test_files/09_pointing_pair_and_triple_1011509.txt",
 		"./test_files/10_xwing_1307267.txt",
+		"./test_files/12_tough_20151107_173.txt", // TODO
+		"./test_files/11_swordfish_1280430.txt",
+		"./test_files/13_swordfish_008009000300057001000100009230000070005406100060000038900003000700840003000700600.txt",
+		"./test_files/14_swordfish_980010020002700000000009010700040800600107002009030005040900000000005700070020039.txt",
 	}
 
 	for _, file := range files {
 		board, err := getBoard(file)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("%s: %s", file, err)
 			return
 		}
 
 		if err = board.Solve(); err != nil {
-			t.Fatal(err)
+			t.Fatalf("%s: %s", file, err)
 			return
 		}
 
 		if !board.isSolved() {
-			t.Fatalf("could not solve %s", file)
+			t.Fatalf("%s: could not solve", file)
 			return
 		}
 	}
