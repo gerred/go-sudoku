@@ -14,13 +14,6 @@ func (b *board) SolveXYChain() error {
 	// terminate when more than one away and cell shares a value with the other end
 	// cells visible by both ends of the chain can have their shared value removed.
 	for i := 0; i < 81; i++ {
-		/*coords := getCoords(i)
-		if coords.row != 8 || coords.col != 3 {
-			if coords.row != 6 || coords.col != 1 {
-				continue
-			}
-		}*/
-
 		blit := b.blits[i]
 		if bits.GetNumberOfSetBits(blit) != 2 {
 			continue
@@ -153,17 +146,26 @@ loopVisible:
 		newChain = append(newChain, chain...)
 		newChain = append(newChain, item)
 
+		nextExcludeBit := curBlit & itemBlit &^ excludeBit
+
 		if len(chain) > 1 {
-			if itemBlit&^excludeBit&firstBitInChain == firstBitInChain {
-				// TODO: is this a sufficient test, or do we need to check
-				// against the first bit selected?
-				// also, should we keep going? there may be longer chains
+			if itemBlit&^nextExcludeBit&firstBitInChain == firstBitInChain {
+				/*itemCoords := getCoords(item)
+				fmt.Printf("**** r,c:               %d,%d\n", itemCoords.row, itemCoords.col)
+				fmt.Printf("**** first bit:         %09b %d\n", firstBitInChain, bits.GetSingleBitValue(firstBitInChain))
+				fmt.Printf("**** item blit:         %09b\n", itemBlit)
+				fmt.Printf("**** next exclude bit:  %09b %d\n", nextExcludeBit, bits.GetSingleBitValue(nextExcludeBit))
+				fmt.Printf("**** ^exclude bit:      %09b\n", ^nextExcludeBit&0x1FF)
+				fmt.Printf("**** itemBlit&^exclude: %09b\n", itemBlit&^nextExcludeBit)
+				fmt.Printf("**** test:              %09b\n", itemBlit&^nextExcludeBit&firstBitInChain)*/
+
+				// TODO: should we keep going? there may be longer chains
 				lists = append(lists, newChain)
 				continue
 			}
 		}
 
-		newLists := b.xyChainFollow(newChain, curBlit&itemBlit&^excludeBit, firstBitInChain, depth+1)
+		newLists := b.xyChainFollow(newChain, nextExcludeBit, firstBitInChain, depth+1)
 		lists = append(lists, newLists...)
 	}
 
