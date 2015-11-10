@@ -24,169 +24,70 @@ func (b *board) Solve() error {
 	return nil
 }
 
-func (b *board) runSolver(solver func() error) (bool, error) {
-	oldBlits := b.blits
-	if err := solver(); err != nil {
-		return false, err
-	}
-	changed := !reflect.DeepEqual(oldBlits, b.blits)
-	return changed, nil
+type solver struct {
+	run        func() error
+	name       string
+	printBoard bool
 }
 
-func (b *board) runSolverN(solver func(int) error, n int) (bool, error) {
-	oldBlits := b.blits
-	if err := solver(n); err != nil {
-		return false, err
+func (b *board) getSolvers() []solver {
+	solvers := []solver{
+		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
+		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
+		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
+		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
+		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
+		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)}, // NOTE: not seen in any tests yet
+		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
+		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
+		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)}, // NOTE: not seen in any tests yet
+		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
+		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
+		{name: "BOX LINE", run: b.SolveBoxLine},
+		{name: "X-WING", run: b.SolveXWing},
+		{name: "Y-WING", run: b.SolveYWing},
+		{name: "SWORDFISH", run: b.SolveSwordFish},
+		{name: "XY-Chain", run: b.SolveXYChain, printBoard: true},
 	}
-	changed := !reflect.DeepEqual(oldBlits, b.blits)
-	return changed, nil
+
+	return solvers
+}
+
+func (b *board) getSolverN(solver func(int) error, n int) func() error {
+	return func() error {
+		if err := solver(n); err != nil {
+			return err
+		}
+		return nil
+	}
 }
 
 func (b *board) runSolvers() error {
-	var err error
-	var changed bool
+	solvers := b.getSolvers()
 
-	printOnNextIteration := false
+mainLoop:
 	for !b.isSolved() {
-		if printOnNextIteration {
-			b.PrintHints()
-			printOnNextIteration = false
-		}
+		for _, solver := range solvers {
+			oldBlits := b.blits
+			fmt.Printf("--- %s\n", solver.name)
+			if solver.printBoard {
+				b.PrintHints()
+				b.PrintURL()
+			}
 
-		fmt.Println("--- NAKED SINGLE")
-		if changed, err = b.runSolver(b.SolveNakedSingle); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- HIDDEN SINGLE")
-		if changed, err = b.runSolver(b.SolveHiddenSingle); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- NAKED PAIR")
-		if changed, err = b.runSolverN(b.SolveNakedN, 2); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- NAKED TRIPLE")
-		if changed, err = b.runSolverN(b.SolveNakedN, 3); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- NAKED QUAD")
-		if changed, err = b.runSolverN(b.SolveNakedN, 4); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- NAKED QUINT") // not seen in any tests yet
-		if changed, err = b.runSolverN(b.SolveNakedN, 5); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- HIDDEN PAIR")
-		if changed, err = b.runSolverN(b.SolveHiddenN, 2); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- HIDDEN TRIPLE")
-		if changed, err = b.runSolverN(b.SolveHiddenN, 3); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- HIDDEN QUAD") // not seen in any tests yet
-		if changed, err = b.runSolverN(b.SolveHiddenN, 4); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- HIDDEN QUINT")
-		if changed, err = b.runSolverN(b.SolveHiddenN, 5); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- POINTING PAIR AND TRIPLE REDUCTION")
-		if changed, err = b.runSolver(b.SolvePointingPairAndTripleReduction); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- BOX LINE")
-		if changed, err = b.runSolver(b.SolveBoxLine); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- X-WING")
-		if changed, err = b.runSolver(b.SolveXWing); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- Y-WING")
-		if changed, err = b.runSolver(b.SolveYWing); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("--- SWORDFISH")
-		if changed, err = b.runSolver(b.SolveSwordFish); err != nil {
-			return err
-		}
-		if changed {
-			continue
-		}
-
-		fmt.Println("*****************************************")
-		b.PrintHints()
-		b.PrintURL()
-		fmt.Println("*****************************************")
-
-		printOnNextIteration = true
-
-		fmt.Println("--- XY-Chain")
-		if changed, err = b.runSolver(b.SolveXYChain); err != nil {
-			return err
-		}
-		if changed {
-			//break
-			continue
+			if err := solver.run(); err != nil {
+				return err
+			}
+			if !reflect.DeepEqual(oldBlits, b.blits) {
+				if solver.printBoard {
+					b.PrintHints()
+					b.PrintURL()
+				}
+				continue mainLoop
+			}
+			if b.isSolved() {
+				break
+			}
 		}
 
 		// TODO: Trial and Error
