@@ -15,6 +15,7 @@ type coords struct {
 	row int
 	col int
 	box int
+	pos int
 }
 
 type inspector func(int, int) error
@@ -25,7 +26,7 @@ func getCoords(pos int) coords {
 	boxCol := ((pos % 9) / 3)
 	box := boxRow*3 + boxCol
 
-	return coords{row: pos / 9, col: pos % 9, box: box}
+	return coords{row: pos / 9, col: pos % 9, box: box, pos: pos}
 }
 
 func (b *board) operateOnRow(pos int, op inspector) error {
@@ -167,5 +168,39 @@ func intersect(a []int, b []int) []int {
 			}
 		}
 	}
+	return list
+}
+
+func union(a []int, b []int) []int {
+	store := make(map[int]interface{})
+	for _, i := range a {
+		store[i] = struct{}{}
+	}
+	for _, i := range b {
+		store[i] = struct{}{}
+	}
+
+	var list []int
+	for k, _ := range store {
+		list = append(list, k)
+	}
+
+	return list
+}
+
+func subtract(a []int, b []int) []int {
+	store := make(map[int]interface{})
+	for _, i := range a {
+		store[i] = struct{}{}
+	}
+	for _, i := range b {
+		delete(store, i)
+	}
+
+	var list []int
+	for k, _ := range store {
+		list = append(list, k)
+	}
+
 	return list
 }
