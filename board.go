@@ -159,12 +159,54 @@ func (b *board) isSolved() bool {
 	return b.numSolved() == 81
 }
 
+func (b *board) getVisibleCells(pos int) []int {
+	var list []int
+	coords := getCoords(pos)
+
+	for i := 0; i < 81; i++ {
+		if i == pos || b.solved[i] != 0 {
+			continue
+		}
+		t := getCoords(i)
+		if t.row == coords.row ||
+			t.col == coords.col ||
+			t.box == coords.box {
+			list = append(list, i)
+		}
+	}
+
+	return list
+}
+
+func (b *board) getVisibleCellsWithHint(pos int, hint uint) []int {
+	var list []int
+	coords := getCoords(pos)
+
+	for i := 0; i < 81; i++ {
+		if i == pos || b.solved[i] != 0 || b.blits[i]&hint != hint {
+			continue
+		}
+		t := getCoords(i)
+		if t.row == coords.row ||
+			t.col == coords.col ||
+			t.box == coords.box {
+			list = append(list, i)
+		}
+	}
+
+	return list
+}
+
 func intersect(a []int, b []int) []int {
+	store := make(map[int]interface{})
 	var list []int
 	for _, i := range a {
 		for _, j := range b {
 			if i == j {
-				list = append(list, i)
+				if _, ok := store[i]; !ok {
+					store[i] = struct{}{}
+					list = append(list, i)
+				}
 			}
 		}
 	}
@@ -173,16 +215,18 @@ func intersect(a []int, b []int) []int {
 
 func union(a []int, b []int) []int {
 	store := make(map[int]interface{})
-	for _, i := range a {
-		store[i] = struct{}{}
-	}
-	for _, i := range b {
-		store[i] = struct{}{}
-	}
-
 	var list []int
-	for k, _ := range store {
-		list = append(list, k)
+	for _, val := range a {
+		if _, ok := store[val]; !ok {
+			store[val] = struct{}{}
+			list = append(list, val)
+		}
+	}
+	for _, val := range b {
+		if _, ok := store[val]; !ok {
+			store[val] = struct{}{}
+			list = append(list, val)
+		}
 	}
 
 	return list
@@ -190,16 +234,15 @@ func union(a []int, b []int) []int {
 
 func subtract(a []int, b []int) []int {
 	store := make(map[int]interface{})
-	for _, i := range a {
-		store[i] = struct{}{}
-	}
-	for _, i := range b {
-		delete(store, i)
+	for _, val := range b {
+		store[val] = struct{}{}
 	}
 
 	var list []int
-	for k, _ := range store {
-		list = append(list, k)
+	for _, val := range a {
+		if _, ok := store[val]; !ok {
+			list = append(list, val)
+		}
 	}
 
 	return list
