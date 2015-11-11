@@ -113,7 +113,7 @@ func TestSubtract(t *testing.T) {
 	}
 }
 
-func testXYChain(t *testing.T) {
+func TestXYChain(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -223,7 +223,7 @@ func loadBoardWithHints(t *testing.T, hintBoard string) (b *board) {
 	return b
 }
 
-func testBoards(t *testing.T) {
+func TestBoards(t *testing.T) {
 	files := []string{
 		"./test_files/01_naked_single_493382.txt",
 		"./test_files/02_hidden_single_1053217.txt",

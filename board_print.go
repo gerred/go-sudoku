@@ -7,6 +7,10 @@ import (
 )
 
 func (b *board) Print() {
+	if b.quiet {
+		return
+	}
+
 	fmt.Print("|-------|-------|-------|\n| ")
 	for i := 0; i < len(b.solved); i++ {
 		if b.solved[i] == 0 {
@@ -31,6 +35,10 @@ func (b *board) Print() {
 }
 
 func (b *board) PrintURL() {
+	if b.quiet {
+		return
+	}
+
 	for i := 0; i < len(b.solved); i++ {
 		fmt.Print(b.solved[i])
 	}
@@ -38,6 +46,10 @@ func (b *board) PrintURL() {
 }
 
 func (b *board) PrintHints() {
+	if b.quiet {
+		return
+	}
+
 	fmt.Print("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n")
 	fmt.Printf("|r,c| %15d %15d %15d | %15d %15d %15d | %15d %15d %15d |\n", 0, 1, 2, 3, 4, 5, 6, 7, 8)
 	fmt.Print("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n| 0 | ")
@@ -64,7 +76,7 @@ func (b *board) PrintHints() {
 }
 
 func (b *board) Log(isSolve bool, pos int, msg string) {
-	if b.loading {
+	if b.loading || b.quiet {
 		return
 	}
 

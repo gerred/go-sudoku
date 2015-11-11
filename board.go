@@ -9,6 +9,7 @@ type board struct {
 	solved  [81]uint
 	blits   [81]uint
 	loading bool
+	quiet   bool
 }
 
 type coords struct {

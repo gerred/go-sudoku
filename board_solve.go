@@ -46,8 +46,9 @@ func (b *board) getSolvers() []solver {
 		{name: "BOX LINE", run: b.SolveBoxLine},
 		{name: "X-WING", run: b.SolveXWing},
 		{name: "Y-WING", run: b.SolveYWing},
-		{name: "SWORDFISH", run: b.SolveSwordFish},
-		{name: "XY-Chain", run: b.SolveXYChain, printBoard: true},
+		//{name: "SWORDFISH", run: b.SolveSwordFish},
+		{name: "X-CYCLES", run: b.SolveXCycles},
+		//{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true},
 	}
 
 	return solvers
@@ -90,13 +91,88 @@ mainLoop:
 			}
 		}
 
-		// TODO: Trial and Error
+		/*newBoard, err := TrialAndError(*b)
+		if err != nil {
+			return err
+		}
+		if newBoard == nil {
+			return fmt.Errorf("board has no solution")
+		}
+
+		b.solved = newBoard.solved
+		b.blits = newBoard.blits*/
 		break
 	}
 
 	fmt.Println("--- END SOLVER")
 
 	return nil
+}
+
+func TrialAndError(b board) (*board, error) {
+	// what type of cell would make a good candidate?
+	// one where choosing a candidate would result in a lot of eliminations
+	// we can use b.getVisibleCellsWithHint
+
+	// cell pos, hint, number of eliminations
+	store := make(map[int]map[uint]int)
+
+	maxEliminations := 0
+	for i := 0; i < 81; i++ {
+		if b.solved[i] != 0 {
+			continue
+		}
+
+		hintEliminations := make(map[uint]int)
+		store[i] = hintEliminations
+
+		bitList := bits.GetBitList(b.blits[i])
+		for _, hint := range bitList {
+			n := len(b.getVisibleCellsWithHint(i, hint))
+			hintEliminations[hint] = n
+			if n > maxEliminations {
+				maxEliminations = n
+			}
+		}
+	}
+
+	for eliminations := maxEliminations; eliminations > 0; eliminations-- {
+		fmt.Printf("eliminations: %d\n", eliminations)
+		posHints := getCandidates(eliminations, store)
+		if len(posHints) == 0 {
+			continue
+		}
+		for pos, hints := range posHints {
+			for _, hint := range hints {
+				fmt.Printf("%#2v hint:%d\n", getCoords(pos), bits.GetSingleBitValue(hint))
+				// try the elimination
+				trialBoard := &board{solved: b.solved, blits: b.blits, loading: false, quiet: true}
+				trialBoard.SolvePosition(pos, bits.GetSingleBitValue(hint))
+				if err := trialBoard.Solve(); err != nil {
+					fmt.Printf("... that board didn't work\n")
+					// nope.
+				} else {
+					trialBoard.quiet = false
+					return trialBoard, nil
+				}
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func getCandidates(n int, store map[int]map[uint]int) map[int][]uint {
+	list := make(map[int][]uint)
+	for pos, hintEliminations := range store {
+		for hint, eliminations := range hintEliminations {
+			if eliminations == n {
+				hintList := list[pos]
+				list[pos] = append(hintList, hint)
+			}
+		}
+	}
+	return list
 }
 
 func (b *board) SolvePosition(pos int, val uint) error {
