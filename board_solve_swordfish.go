@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/judwhite/go-sudoku/internal/bits"
 )
@@ -167,7 +165,7 @@ func (b *board) SolveSwordFish() error {
 				continue
 			}
 
-			fmt.Printf("%#v\n", candidatePerms)
+			//fmt.Printf("%#v\n", candidatePerms)
 
 			for hint, v := range candidatePerms {
 				// TODO: REMOVE, debug
@@ -176,11 +174,11 @@ func (b *board) SolveSwordFish() error {
 				}*/
 				// END debug
 
-				var once1 sync.Once
+				/*var once1 sync.Once
 				print1 := func() {
 					fmt.Printf("-----------------------------------------\n")
 					fmt.Printf("swordfish: dim:%s num:%d\n", dim.blockType, bits.GetSingleBitValue(hint))
-				}
+				}*/
 
 				for _, c := range v {
 					// TODO: DEBUG, remove
@@ -190,25 +188,25 @@ func (b *board) SolveSwordFish() error {
 					fmt.Println("GOT IT")*/
 					// END debug
 
-					var once2 sync.Once
+					/*var once2 sync.Once
 					print2 := func() {
 						once1.Do(print1)
 						fmt.Printf("\n")
 						fmt.Printf("-- top level:\n")
-					}
+					}*/
 
 					sfPerms, err := b.swordfishGetPermutations(dim, c, hint, i)
 					if err != nil {
 						return err
 					}
 
-					var once3 sync.Once
+					/*var once3 sync.Once
 					print3 := func() {
 						once2.Do(print2)
 						for _, pick := range c {
 							fmt.Printf("-- %#2v %s\n", getCoords(pick), bits.GetString(b.blits[pick]))
 						}
-					}
+					}*/
 
 					for _, x := range sfPerms {
 						// TODO: DEBUG, remove
@@ -217,14 +215,14 @@ func (b *board) SolveSwordFish() error {
 						}*/
 						// END debug
 
-						var once4 sync.Once
+						/*var once4 sync.Once
 						print4 := func() {
 							once3.Do(print3)
 							fmt.Printf("---- second level:\n")
 							for _, pos := range x {
 								fmt.Printf("---- %#2v %s\n", getCoords(pos), bits.GetString(b.blits[pos]))
 							}
-						}
+						}*/
 
 						// combine first and second level to get new 'one must overlap' set
 						// (in this case, two must overlap...)
@@ -232,7 +230,7 @@ func (b *board) SolveSwordFish() error {
 						overlapSet = append(overlapSet, c...)
 						overlapSet = append(overlapSet, x...)
 
-						fmt.Printf("%#v\n", overlapSet)
+						//fmt.Printf("%#v\n", overlapSet)
 
 						nextPos := dim.getMaxPosFromOverlapSet(overlapSet)
 						sfPerms2, err := b.swordfishGetPermutations(dim, overlapSet, hint, nextPos)
@@ -241,7 +239,7 @@ func (b *board) SolveSwordFish() error {
 						}
 
 						if len(sfPerms2) != 0 {
-							once4.Do(print4)
+							//once4.Do(print4)
 							for _, y := range sfPerms2 {
 								// TODO: DEBUG, remove
 								/*if !reflect.DeepEqual(y, []int{16, 34}) {
@@ -249,10 +247,10 @@ func (b *board) SolveSwordFish() error {
 								}*/
 								// END debug
 
-								fmt.Printf("------ third level:\n")
+								/*fmt.Printf("------ third level:\n")
 								for _, pos := range y {
 									fmt.Printf("------ %#2v %s\n", getCoords(pos), bits.GetString(b.blits[pos]))
-								}
+								}*/
 
 								// Here we go...
 								// if we pulled sets from columns, given a hint, remove that hint
@@ -260,15 +258,13 @@ func (b *board) SolveSwordFish() error {
 								// set. still confused? me too.
 								// http://www.sudokuwiki.org/Sword_Fish_Strategy
 
-								// brain needs a break, brb.
-								//dim.op_inverted
 								modified, err := b.swordfishApply(dim, hint, c, x, y)
 								if err != nil {
 									return err
 								}
 								if modified {
 									// try simpler techniques before re-trying swordfish
-									fmt.Println("**** we did it!")
+									//fmt.Println("**** we did it!")
 									return nil
 								}
 							}
@@ -393,7 +389,7 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 	overlap = append(overlap, set2...)
 	overlap = append(overlap, set3...)
 
-	fmt.Printf("applying, hint: %d...\n", bits.GetSingleBitValue(hint))
+	//fmt.Printf("applying, hint: %d...\n", bits.GetSingleBitValue(hint))
 
 	begin := b.blits
 
@@ -412,12 +408,12 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 					return nil
 				}
 			}
-			fmt.Printf("- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))
+			//fmt.Printf("- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))
 
 			return b.updateCandidates(target, source, ^hint)
 		}
 
-		fmt.Printf("%#2v %s\n", getCoords(item), bits.GetString(b.blits[item]))
+		//fmt.Printf("%#2v %s\n", getCoords(item), bits.GetString(b.blits[item]))
 		if err := sf.op_inverted(item, removeHint); err != nil {
 			return false, err
 		}

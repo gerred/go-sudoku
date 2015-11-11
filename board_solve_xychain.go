@@ -1,12 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-	"sync"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "github.com/judwhite/go-sudoku/internal/bits"
 
 func (b *board) SolveXYChain() error {
 	// http://www.sudokuwiki.org/XY_Chains
@@ -60,7 +54,7 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 			continue
 		}
 
-		var once1 sync.Once
+		/*var once1 sync.Once
 		print1 := func() {
 			fmt.Printf("-/- %#v hint:%d\n", list, bits.GetSingleBitValue(hint))
 			for idx, chainItem := range list {
@@ -70,13 +64,13 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 			for _, target := range targets {
 				fmt.Printf("----- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))
 			}
-		}
+		}*/
 
 		updated := false
 	targetLoop:
 		for _, target := range targets {
 			// items in the chain aren't candidates (but why not? shouldn't the logic hold? TODO)
-			once1.Do(print1)
+			//once1.Do(print1)
 			for _, chainItem := range list {
 				if target == chainItem {
 					continue targetLoop
@@ -133,13 +127,13 @@ loopVisible:
 		return lists
 	}
 
-	if len(chain) == 1 {
+	/*if len(chain) == 1 {
 		fmt.Printf("* %#2v %s\n", getCoords(curPos), bits.GetString(curBlit))
-	}
+	}*/
 
-	prefix := strings.Repeat("-", depth+1)
+	//prefix := strings.Repeat("-", depth+1)
 	for _, item := range filtered {
-		fmt.Printf("%s %#2v %s\n", prefix, getCoords(item), bits.GetString(b.blits[item]))
+		//fmt.Printf("%s %#2v %s\n", prefix, getCoords(item), bits.GetString(b.blits[item]))
 		itemBlit := b.blits[item]
 
 		var newChain []int
