@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "github.com/judwhite/go-sudoku/internal/bits"
 
 func (b *board) SolveXWing() error {
 	// When there are
@@ -29,7 +25,7 @@ func (b *board) SolveXWing() error {
 		// END TODO
 
 		blit := b.blits[i]
-		c1 := getCoords(i)
+		//c1 := getCoords(i)
 
 		dims := []struct {
 			op        containerOperator
@@ -72,7 +68,7 @@ func (b *board) SolveXWing() error {
 					continue
 				}
 				lockedPairPos := pairs[0]
-				c2 := getCoords(lockedPairPos)
+				//c2 := getCoords(lockedPairPos)
 
 				var pairs21 []int
 				if err := dim.op2(i, findPairs(&pairs21)); err != nil {
@@ -111,9 +107,9 @@ func (b *board) SolveXWing() error {
 					}
 
 					for _, item22 := range shortList {
-						c4 := getCoords(item22)
+						//c4 := getCoords(item22)
 
-						logged := false
+						//logged := false
 
 						sourceList := []int{i, lockedPairPos, item21, item22}
 
@@ -124,7 +120,7 @@ func (b *board) SolveXWing() error {
 								}
 							}
 
-							if b.willUpdateCandidates(target, source, ^bit) && !logged {
+							/*if b.willUpdateCandidates(target, source, ^bit) && !logged {
 								logged = true
 								b.PrintHints()
 								fmt.Printf("xwing: val:%d\n", bits.GetSingleBitValue(bit))
@@ -132,7 +128,7 @@ func (b *board) SolveXWing() error {
 								fmt.Printf("- %#2v\n", c2)
 								fmt.Printf("- %#2v\n", c3)
 								fmt.Printf("- %#2v\n", c4)
-							}
+							}*/
 
 							return b.updateCandidates(target, source, ^bit)
 						}
