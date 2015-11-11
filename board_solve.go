@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/judwhite/go-sudoku/internal/bits"
 )
@@ -10,14 +11,14 @@ import (
 func (b *board) Solve() error {
 	// first iteration naked single
 	b.loading = true // turn off logging, this run is boring
-	fmt.Println("--- NAKED SINGLE: FIRST ITERATION")
+	//fmt.Println("--- NAKED SINGLE: FIRST ITERATION")
 	if err := b.SolveNakedSingle(); err != nil {
 		return err
 	}
 	b.PrintHints()
 	b.loading = false
 
-	if err := b.runSolvers(); err != nil {
+	if err := b.runSolvers(b.getSolvers()); err != nil {
 		return err
 	}
 
@@ -25,9 +26,32 @@ func (b *board) Solve() error {
 }
 
 type solver struct {
-	run        func() error
-	name       string
-	printBoard bool
+	run         func() error
+	name        string
+	printBoard  bool
+	safetyCheck bool
+}
+
+func (b *board) getFastSolvers() []solver {
+	solvers := []solver{
+		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
+		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
+		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
+		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
+		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
+		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)}, // NOTE: not seen in any tests yet
+		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
+		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
+		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)}, // NOTE: not seen in any tests yet
+		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
+		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
+		{name: "BOX LINE", run: b.SolveBoxLine},
+		{name: "X-WING", run: b.SolveXWing},
+		{name: "Y-WING", run: b.SolveYWing},
+		{name: "SWORDFISH", run: b.SolveSwordFish},
+		{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true, safetyCheck: true},
+	}
+	return solvers
 }
 
 func (b *board) getSolvers() []solver {
@@ -46,9 +70,9 @@ func (b *board) getSolvers() []solver {
 		{name: "BOX LINE", run: b.SolveBoxLine},
 		{name: "X-WING", run: b.SolveXWing},
 		{name: "Y-WING", run: b.SolveYWing},
-		//{name: "SWORDFISH", run: b.SolveSwordFish},
-		{name: "X-CYCLES", run: b.SolveXCycles},
-		//{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true},
+		{name: "SWORDFISH", run: b.SolveSwordFish},
+		{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true, safetyCheck: true},
+		{name: "X-CYCLES", run: b.SolveXCycles, printBoard: true, safetyCheck: true},
 	}
 
 	return solvers
@@ -63,23 +87,42 @@ func (b *board) getSolverN(solver func(int) error, n int) func() error {
 	}
 }
 
-func (b *board) runSolvers() error {
-	solvers := b.getSolvers()
-
+func (b *board) runSolvers(solvers []solver) error {
 mainLoop:
 	for !b.isSolved() {
+		oldBlits := b.blits
 		for _, solver := range solvers {
-			oldBlits := b.blits
-			fmt.Printf("--- %s\n", solver.name)
 			if solver.printBoard {
 				b.PrintHints()
 				b.PrintURL()
+			}
+
+			var testBoard *board
+
+			if solver.safetyCheck {
+				testBoard, _ = TrialAndError(*b)
 			}
 
 			if err := solver.run(); err != nil {
 				return err
 			}
 			if !reflect.DeepEqual(oldBlits, b.blits) {
+				if solver.safetyCheck && testBoard != nil {
+					for i := 0; i < 81; i++ {
+						if b.blits[i]&testBoard.blits[i] != testBoard.blits[i] {
+							fmt.Printf("-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/\n")
+							fmt.Printf("%#2v\n", getCoords(i))
+							fmt.Printf("%09b\n", b.blits[i])
+							fmt.Printf("%09b\n", testBoard.blits[i])
+							b.PrintHints()
+							testBoard.Print()
+							fmt.Printf("-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/\n")
+							return fmt.Errorf("error at %#v", getCoords(i))
+						}
+					}
+					testBoard, _ = TrialAndError(*b)
+				}
+
 				if solver.printBoard {
 					b.PrintHints()
 					b.PrintURL()
@@ -91,7 +134,7 @@ mainLoop:
 			}
 		}
 
-		/*newBoard, err := TrialAndError(*b)
+		newBoard, err := TrialAndError(*b)
 		if err != nil {
 			return err
 		}
@@ -100,7 +143,7 @@ mainLoop:
 		}
 
 		b.solved = newBoard.solved
-		b.blits = newBoard.blits*/
+		b.blits = newBoard.blits
 		break
 	}
 
@@ -108,6 +151,8 @@ mainLoop:
 
 	return nil
 }
+
+var its int
 
 func TrialAndError(b board) (*board, error) {
 	// what type of cell would make a good candidate?
@@ -137,19 +182,24 @@ func TrialAndError(b board) (*board, error) {
 	}
 
 	for eliminations := maxEliminations; eliminations > 0; eliminations-- {
-		fmt.Printf("eliminations: %d\n", eliminations)
+		//fmt.Printf("eliminations: %d\n", eliminations)
 		posHints := getCandidates(eliminations, store)
 		if len(posHints) == 0 {
 			continue
 		}
 		for pos, hints := range posHints {
 			for _, hint := range hints {
-				fmt.Printf("%#2v hint:%d\n", getCoords(pos), bits.GetSingleBitValue(hint))
+				//fmt.Printf("%#2v hint:%d\n", getCoords(pos), bits.GetSingleBitValue(hint))
 				// try the elimination
 				trialBoard := &board{solved: b.solved, blits: b.blits, loading: false, quiet: true}
-				trialBoard.SolvePosition(pos, bits.GetSingleBitValue(hint))
-				if err := trialBoard.Solve(); err != nil {
-					fmt.Printf("... that board didn't work\n")
+				trialBoard.bfDepth = b.bfDepth + 1
+				if err := trialBoard.SolvePosition(pos, bits.GetSingleBitValue(hint)); err != nil {
+					continue
+				}
+				its++
+				fmt.Printf("%s BF: %#2v %d %d\n", strings.Repeat("-", b.bfDepth), getCoords(pos), bits.GetSingleBitValue(hint), its)
+				if err := trialBoard.runSolvers(b.getFastSolvers()); err != nil {
+					//fmt.Printf("... that board didn't work\n")
 					// nope.
 				} else {
 					trialBoard.quiet = false

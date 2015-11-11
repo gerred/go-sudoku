@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	//board, err := getBoard("./test_files/12_tough_20151107_173.txt") // TODO
-	//board, err := getBoard("./test_files/input.txt")
+	runFile("./test_files/12_tough_20151107_173.txt") // TODO
+	//runFile("./test_files/input.txt")
 
-	runFile("./test_files/21_ywing.txt")
+	//runFile("./test_files/28_xcycles.txt")
 
 	//runTop95()
 }

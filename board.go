@@ -10,6 +10,7 @@ type board struct {
 	blits   [81]uint
 	loading bool
 	quiet   bool
+	bfDepth int
 }
 
 type coords struct {
