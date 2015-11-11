@@ -14,7 +14,8 @@ type xcycle struct {
 	isPrevStrongLink bool
 	prev             *xcycle
 	next             []*xcycle
-	visible          []int
+	fullVisible      []int
+	filteredVisible  []int
 	depth            int
 	canSeeStart      bool
 	closedLoop       bool
@@ -39,13 +40,13 @@ func (b *board) SolveXCycles() error {
 			}
 
 			cycle := xcycle{
-				coords:  getCoords(i),
-				visible: visible,
+				coords:          getCoords(i),
+				fullVisible:     visible,
+				filteredVisible: visible,
 			}
 
 			b.xcyclesRecurse(&cycle, hint, i)
 
-			fmt.Printf("+ hint: %d\n", bits.GetSingleBitValue(hint))
 			modified, err := b.xcyclesPrint(&cycle, hint)
 			if err != nil {
 				return err
@@ -65,11 +66,13 @@ func (b *board) xcyclesPrint(cycle *xcycle, hint uint) (bool, error) {
 		// this first pass is a simplification
 		x := cycle
 		valid := true
+		isStrongLink := x.isPrevStrongLink
 		for x.prev != nil {
-			if !x.isPrevStrongLink && !x.prev.isPrevStrongLink {
+			if !x.isPrevStrongLink && x.isPrevStrongLink != isStrongLink {
 				valid = false
 				break
 			}
+			isStrongLink = !isStrongLink
 			x = x.prev
 		}
 
@@ -82,6 +85,28 @@ func (b *board) xcyclesPrint(cycle *xcycle, hint uint) (bool, error) {
 			// since we've validated that our cells don't contain any consecutive weak links, the
 			// entire cycle can be thought of as half on, or half off, alternating.
 			// maybe... it would definitely work if all links were strong links.
+
+			// first let's build some reasonable log information
+			// such as: +4[B2]–4[B4]+4[H4]–4[H8]+4[F8]–4[F2]
+			var logmsg string
+			x = cycle
+			var prefix string
+			if x.isPrevStrongLink {
+				prefix = "+"
+			} else {
+				prefix = "-"
+			}
+			for x != nil {
+				//logmsg = fmt.Sprintf("%s%d[%c%d]%s", prefix, bits.GetSingleBitValue(hint), 'A'+x.coords.row, x.coords.col+1, logmsg)
+				logmsg = fmt.Sprintf("%s%d[row:%d,col:%d]%s", prefix, bits.GetSingleBitValue(hint), x.coords.row, x.coords.col, logmsg)
+				x = x.prev
+				if prefix == "-" {
+					prefix = "+"
+				} else {
+					prefix = "-"
+				}
+			}
+			fmt.Printf("%s\n", logmsg)
 
 			var evenVisible []int
 			var oddVisible []int
@@ -142,7 +167,7 @@ func (b *board) xcyclesRecurse(cycle *xcycle, hint uint, startPos int) {
 	//fmt.Printf("- hint: %d\n", bits.GetSingleBitValue(hint))
 	//fmt.Printf("-- visible %d: %#2v %s -- common: %v\n", idx, getCoords(cell), bits.GetString(b.blits[cell]), commonCoords)
 	//fmt.Printf("--- %#v\n", cycle)
-	for _, cell := range cycle.visible {
+	for _, cell := range cycle.filteredVisible {
 		visible := b.getVisibleCellsWithHint(cell, hint)
 		if len(visible) == 0 {
 			continue
@@ -160,13 +185,15 @@ func (b *board) xcyclesRecurse(cycle *xcycle, hint uint, startPos int) {
 			}
 		}
 
-		commonList := intersect(cycle.visible, visible)
+		commonList := intersect(cycle.fullVisible, visible)
+		isPrevStrongLink := len(commonList) == 0
 
 		nextCycle := &xcycle{
 			coords:           getCoords(cell),
 			prev:             cycle,
-			visible:          filtered,
-			isPrevStrongLink: len(commonList) == 0,
+			fullVisible:      visible,
+			filteredVisible:  filtered,
+			isPrevStrongLink: isPrevStrongLink,
 			depth:            cycle.depth + 1,
 			canSeeStart:      canSeeStart,
 			closedLoop:       cell == startPos,

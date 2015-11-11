@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,106 +10,69 @@ import (
 	"github.com/judwhite/go-sudoku/internal/bits"
 )
 
-func TestUnion(t *testing.T) {
+func TestXCycles(t *testing.T) {
 	// arrange
-	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
+	hintBoard := `
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+|r,c|               0               1               2 |               3               4               5 |               6               7               8 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 0 |               8           (1,9)               4 |               5               3               7 |         (1,6,9)         (1,2,6)           (1,2) |
+| 1 |           (7,9)               2               3 |               6               1               4 |           (7,9)               8               5 |
+| 2 |               6           (1,7)               5 |               9               8               2 |           (1,7)               3               4 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 3 |         (3,4,9)         (3,4,6)         (2,6,9) |               1         (4,6,9)               5 |               8               7           (2,9) |
+| 4 |               5           (4,9)           (1,2) |               7           (4,9)               8 |               3           (1,2)               6 |
+| 5 |         (1,7,9)               8       (1,6,7,9) |               2           (6,9)               3 |               4               5           (1,9) |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 6 |               2         (4,6,7)         (1,6,7) |               8               5               9 |           (1,6)         (1,4,6)               3 |
+| 7 |           (4,9)               5           (6,9) |               3               7               1 |               2         (4,6,9)               8 |
+| 8 |         (1,3,9)           (3,9)               8 |               4               2               6 |               5           (1,9)               7 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+`
+
+	b := loadBoardWithHints(t, hintBoard)
+
+	b.PrintHints()
+	b.PrintURL()
+
+	newBoard, err := TrialAndError(*b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newBoard != nil {
+		newBoard.Print()
 	}
 
-	expecteds := [][]int{
-		[]int{1, 2, 3, 4, 5, 6},
-		[]int{1, 2, 3},
-		[]int{1, 2, 3, 4},
-		[]int{1, 2, 3, 4, 5},
-	}
+	// check board is in expected initial state
+	testHint(t, b, 1, 0, []uint{7, 9})
+	testHint(t, b, 8, 0, []uint{1, 3, 9})
+	testHint(t, b, 8, 7, []uint{1, 9})
+	testHint(t, b, 8, 1, []uint{3, 9})
+	testHint(t, b, 4, 1, []uint{4, 9})
+	testHint(t, b, 0, 1, []uint{1, 9})
+
+	// TODO: testHint on correct cells in cycle
 
 	// act
-	var actuals [][]int
-	for _, input := range inputs {
-		actual := union(input[0], input[1])
-		actuals = append(actuals, actual)
+	if err := b.SolveXCycles(); err != nil {
+		t.Fatal(err)
 	}
+
+	b.PrintHints()
 
 	// assert
-	for i, expected := range expecteds {
-		actual := actuals[i]
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("inputs: %v expected: %v actual: %v", inputs[i], expected, actual)
-		}
-	}
-}
 
-func TestIntersect(t *testing.T) {
-	// arrange
-	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
-	}
+	// test for absence of defect in X-CYCLES:
+	testHint(t, b, 3, 0, []uint{3, 4, 9})
+	testHint(t, b, 5, 0, []uint{1, 7, 9})
+	testHint(t, b, 7, 0, []uint{4, 9})
 
-	expecteds := [][]int{
-		[]int{},
-		[]int{1, 2, 3},
-		[]int{2},
-		[]int{3},
-	}
-
-	// act
-	var actuals [][]int
-	for _, input := range inputs {
-		actual := intersect(input[0], input[1])
-		actuals = append(actuals, actual)
-	}
-
-	// assert
-	for i, expected := range expecteds {
-		actual := actuals[i]
-		if len(expected) == 0 && len(actual) == 0 {
-			continue
-		}
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("inputs: %v expected: %v actual: %v", inputs[i], expected, actual)
-		}
-	}
-}
-
-func TestSubtract(t *testing.T) {
-	// arrange
-	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
-	}
-
-	expecteds := [][]int{
-		[]int{1, 2, 3},
-		[]int{},
-		[]int{1, 3},
-		[]int{1, 2},
-	}
-
-	// act
-	var actuals [][]int
-	for _, input := range inputs {
-		actual := subtract(input[0], input[1])
-		actuals = append(actuals, actual)
-	}
-
-	// assert
-	for i, expected := range expecteds {
-		actual := actuals[i]
-		if len(expected) == 0 && len(actual) == 0 {
-			continue
-		}
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("inputs: %v expected: %v actual: %v", inputs[i], expected, actual)
-		}
-	}
+	// test for expected state after X-CYCLES applied
+	// note: this test may fail in the future if X-CYCLES is modified
+	//       since it could pick a different cycle to operate on
+	/*testHint(t, b, 3, 1, []uint{3})
+	testHint(t, b, 5, 1, []uint{3, 6})
+	testHint(t, b, 8, 2, []uint{2, 9})*/
 }
 
 func TestXYChain(t *testing.T) {
@@ -133,6 +95,7 @@ func TestXYChain(t *testing.T) {
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
 	`
 	b := loadBoardWithHints(t, hintBoard)
+	b.quiet = true
 
 	// check board is in expected initial state
 	testHint(t, b, 5, 6, []uint{5, 7})
@@ -147,7 +110,7 @@ func TestXYChain(t *testing.T) {
 
 	// assert
 
-	// test for defect in XY-Chain:
+	// test for absence of defect in XY-Chain:
 	// - R5C6: old hints: 5,7        remove hint: 5 remaining hints: 7
 	testHint(t, b, 5, 6, []uint{5, 7})
 
