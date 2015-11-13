@@ -127,6 +127,23 @@ func (b *board) getSAT() string {
 		}
 	}
 
+	// each row
+	for r := 1; r <= 9; r++ {
+		// each column
+		for c := 1; c <= 9; c++ {
+			// each value {
+			for v1 := 1; v1 <= 9; v1++ {
+				cur := getRCV(r, c, v1)
+				for v2 := v1 + 1; v2 <= 9; v2++ {
+					cur2 := getRCV(r, c, v2)
+
+					buf.WriteString(fmt.Sprintf("-%d -%d 0\n", cur, cur2))
+					clauses++
+				}
+			}
+		}
+	}
+
 	header := fmt.Sprintf("p cnf %d %d", len(vars), clauses)
 	fmt.Printf("%s\n", header)
 	input := fmt.Sprintf("%s\n%s", header, buf)
