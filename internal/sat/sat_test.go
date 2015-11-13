@@ -49,7 +49,7 @@ func testInput(t *testing.T, input string) {
 	if sln == nil {
 		fmt.Printf("no solution\n")
 	} else {
-		fmt.Printf("set vars: %#v\n", sln.SetVars)
+		fmt.Printf("set vars: %v\n", sln.SetVars)
 		fmt.Printf("clauses:  %#v\n", sln.Clauses)
 	}
 }

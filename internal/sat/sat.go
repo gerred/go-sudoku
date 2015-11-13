@@ -7,9 +7,15 @@ import (
 	"strings"
 )
 
+type setvar struct {
+	VarNum int
+	Value  bool
+}
+
 type sat struct {
-	vars    []int
-	SetVars map[int]bool
+	vars []int
+	//SetVars map[int]bool
+	SetVars []setvar
 	Clauses [][]int
 }
 
@@ -52,7 +58,7 @@ func NewSAT(input string) (*sat, error) {
 	// TODO: validate variable, clause count
 	s := &sat{
 		Clauses: make([][]int, clauseCount),
-		SetVars: make(map[int]bool),
+		//SetVars: make(map[int]bool),
 	}
 
 	// get clauses
@@ -66,6 +72,10 @@ func NewSAT(input string) (*sat, error) {
 	var lastLine bool
 	for i := 0; line != ""; i++ {
 		line = strings.Trim(line, " \r\n\t")
+		if strings.HasPrefix(line, "c ") {
+			// skip comment
+			continue
+		}
 		strParts = strings.SplitN(line, " ", -1)
 		parts, err := getIntArray(strParts)
 		if err != nil {
@@ -138,17 +148,19 @@ func (s *sat) Solve() *sat {
 
 func set(s1 *sat, v int, value bool, depth int) *sat {
 	s2 := &sat{
-		SetVars: make(map[int]bool),
+	//SetVars: make(map[int]bool),
 	}
 	for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
 		}
 	}
-	for k, _ := range s1.SetVars {
+	s2.SetVars = append(s2.SetVars, s1.SetVars...)
+	s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
+	/*for k, _ := range s1.SetVars {
 		s2.SetVars[k] = s1.SetVars[k]
 	}
-	s2.SetVars[v] = value
+	s2.SetVars[v] = value*/
 
 	//prefix := strings.Repeat("-", depth+1)
 	//fmt.Printf("%s %v\n", prefix, s2.setVars)
