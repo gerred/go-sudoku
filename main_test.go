@@ -8,9 +8,10 @@ import (
 	"testing"
 
 	"github.com/judwhite/go-sudoku/internal/bits"
+	"github.com/judwhite/go-sudoku/internal/sat"
 )
 
-func TestXCycles(t *testing.T) {
+func testXCycles(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -75,7 +76,7 @@ func TestXCycles(t *testing.T) {
 	testHint(t, b, 8, 2, []uint{2, 9})*/
 }
 
-func TestXYChain(t *testing.T) {
+func testXYChain(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -223,10 +224,40 @@ func TestBoards(t *testing.T) {
 			return
 		}
 
-		if err = board.Solve(); err != nil {
+		satInput := board.getSAT()
+		sat, err := sat.NewSAT(satInput)
+		if err != nil {
 			t.Fatalf("%s: %s", file, err)
 			return
 		}
+		sat = sat.Solve()
+		if sat == nil {
+			t.Fatalf("%s: could not solve with SAT", file)
+		} else {
+			fmt.Printf("%s: solved with SAT\n", file)
+
+			for k, v := range sat.SetVars {
+				if v {
+					r := k/100 - 1
+					c := (k%100)/10 - 1
+					pos := r*9 + c
+					if board.solved[pos] == 0 {
+						val := k % 10
+						fmt.Printf("r:%d c:%d val:%d\n", r, c, val)
+						err := board.SolvePosition(pos, uint(val))
+						if err != nil {
+							t.Fatalf("%s: %s", file, err)
+							return
+						}
+					}
+				}
+			}
+		}
+
+		/*if err = board.Solve(); err != nil {
+			t.Fatalf("%s: %s", file, err)
+			return
+		}*/
 
 		if !board.isSolved() {
 			t.Fatalf("%s: could not solve", file)
