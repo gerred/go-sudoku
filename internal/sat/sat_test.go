@@ -2,6 +2,7 @@ package sat
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -51,5 +52,64 @@ func testInput(t *testing.T, input string) {
 	} else {
 		fmt.Printf("set vars: %v\n", sln.SetVars)
 		fmt.Printf("clauses:  %#v\n", sln.Clauses)
+	}
+}
+
+func TestHasClause(t *testing.T) {
+	clause := []int{0, 2, 6, 8, 12}
+	for idx, val := range clause {
+		actual := indexOfValue(clause, val)
+		if actual != idx {
+			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+		}
+	}
+
+	clause = []int{0, 2, 6, 8, 12, 14}
+	for idx, val := range clause {
+		actual := indexOfValue(clause, val)
+		if actual != idx {
+			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+		}
+	}
+
+	clause = []int{-937, -737}
+	for idx, val := range clause {
+		actual := indexOfValue(clause, val)
+		if actual != idx {
+			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+		}
+	}
+}
+
+func TestUnitPropogation(t *testing.T) {
+	clause := []int{1, 2, 6, 8, 12}
+
+	expected := []int{1, 2, 6, 8}
+	actual := up(clause, 12, false)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("expected: %v actual: %v", expected, actual)
+	}
+
+	expected = nil
+	actual = up(clause, 12, true)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("expected: %v actual: %v", expected, actual)
+	}
+
+	clause = []int{-1, 2, 6, 8, 12}
+
+	expected = []int{2, 6, 8, 12}
+	//fmt.Printf("clause before1: %v\n", clause)
+	actual = up(clause, 1, true)
+	//fmt.Printf("clause before2: %v\n", clause)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("expected: %v actual: %v", expected, actual)
+	}
+
+	expected = nil
+	//fmt.Printf("clause before3: %v\n", clause)
+	actual = up(clause, 1, false)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 }

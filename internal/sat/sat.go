@@ -2,7 +2,9 @@ package sat
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -42,7 +44,7 @@ func NewSAT(input string) (*sat, error) {
 	// get # of variables, # of clauses from CNF header
 	line = strings.Trim(line[len("p cnf"):], " \r\n\t")
 	strParts := strings.SplitN(line, " ", -1)
-	parts, err := getIntArray(strParts)
+	parts, err := getIntArray(strParts, false, false)
 	if err != nil {
 		return nil, fmt.Errorf("expected first non-comment line in format \"p cnf # #\": %q %q", line, err)
 	}
@@ -77,14 +79,12 @@ func NewSAT(input string) (*sat, error) {
 			continue
 		}
 		strParts = strings.SplitN(line, " ", -1)
-		parts, err := getIntArray(strParts)
+		parts, err := getIntArray(strParts, true, true)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing line: %q", line)
 		}
-		if parts[len(parts)-1] != 0 {
-			return nil, fmt.Errorf("error parsing line, must end in \"0\": %q", line)
-		}
-		s.Clauses[i] = parts[:len(parts)-1]
+		s.Clauses[i] = parts
+
 		for j := 0; j < len(s.Clauses[i]); j++ {
 			v := abs(s.Clauses[i][j])
 			s.vars = append(s.vars, v)
@@ -108,7 +108,7 @@ func NewSAT(input string) (*sat, error) {
 	return s, nil
 }
 
-func getIntArray(values []string) ([]int, error) {
+func getIntArray(values []string, sortValues bool, trimEnd bool) ([]int, error) {
 	list := make([]int, len(values))
 	for i := 0; i < len(values); i++ {
 		v, err := strconv.Atoi(values[i])
@@ -117,6 +117,18 @@ func getIntArray(values []string) ([]int, error) {
 		}
 		list[i] = v
 	}
+
+	if trimEnd {
+		if list[len(list)-1] != 0 {
+			return nil, errors.New("error parsing line, must end in \"0\"")
+		}
+		list = cut(list, len(list)-1)
+	}
+
+	if sortValues {
+		sort.Ints(list)
+	}
+
 	return list, nil
 }
 
@@ -128,12 +140,6 @@ func abs(v int) int {
 }
 
 func (s *sat) Solve() *sat {
-	//for k, _ := range s.vars {
-	//	fmt.Printf("%d ", k)
-	//}
-	//fmt.Println()
-	//fmt.Printf("%#2v\n", s.clauses)
-
 	// let's try some clauses
 	s2 := set(s, s.vars[0], true, 0)
 	if s2 != nil {
@@ -147,9 +153,7 @@ func (s *sat) Solve() *sat {
 }
 
 func set(s1 *sat, v int, value bool, depth int) *sat {
-	s2 := &sat{
-	//SetVars: make(map[int]bool),
-	}
+	s2 := &sat{}
 	for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
@@ -157,13 +161,6 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 	}
 	s2.SetVars = append(s2.SetVars, s1.SetVars...)
 	s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
-	/*for k, _ := range s1.SetVars {
-		s2.SetVars[k] = s1.SetVars[k]
-	}
-	s2.SetVars[v] = value*/
-
-	//prefix := strings.Repeat("-", depth+1)
-	//fmt.Printf("%s %v\n", prefix, s2.setVars)
 
 	signedV := v
 	if !value {
@@ -174,7 +171,6 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 		newClause := up(clause, v, value)
 		if newClause != nil {
 			if len(newClause) == 0 {
-				//fmt.Printf("%s failed clause: idx:%d %v\n", prefix, idx, clause)
 				return nil
 			}
 			s2.Clauses = append(s2.Clauses, newClause)
@@ -198,7 +194,27 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 }
 
 func up(clause []int, v int, val bool) []int {
-	newClause := make([]int, 0)
+	//	fmt.Printf("-------\n")
+	//	fmt.Printf("v:%d clause:%v\n", v, clause)
+	var idx int
+	if idx = indexOfValue(clause, v); idx != -1 {
+		if val {
+			return nil
+		}
+		//fmt.Printf("pos-idx:%d\n", idx)
+		return cut(clause, idx)
+	} else if idx = indexOfValue(clause, -v); idx != -1 {
+		if !val {
+			return nil
+		}
+		//fmt.Printf("neg-idx:%d\n", idx)
+		return cut(clause, idx)
+	} else {
+		//fmt.Printf("nada: %v\n", clause)
+		return clause
+	}
+
+	/*newClause := make([]int, 0)
 	for _, k := range clause {
 		if k == v {
 			// true statement
@@ -214,5 +230,110 @@ func up(clause []int, v int, val bool) []int {
 			newClause = append(newClause, k)
 		}
 	}
-	return newClause
+	return newClause*/
+}
+
+func cut(clause []int, idx int) []int {
+	/*//newClause := make([]int, len(clause)-1)
+	newClause := make([]int, 0)
+	//i := 0
+	for j := 0; j < len(clause); j++ {
+		if j != idx {
+			newClause = append(newClause, clause[j])
+			//newClause[i] = clause[j]
+			//i++
+		}
+	}
+	return newClause*/
+
+	l := len(clause)
+	if idx == 0 {
+		if l == 1 {
+			return []int{}
+		}
+		return clause[1:]
+	} else if idx == l-1 {
+		return clause[:idx]
+	} else {
+		return append(clause[:idx], clause[idx+1:]...)
+		/*newClause := make([]int, len(clause)-1)
+		i := 0
+		for j := 0; j < len(clause); j++ {
+			if j != idx {
+				//newClause = append(newClause, clause[j])
+				newClause[i] = clause[j]
+				i++
+			}
+		}
+		return newClause*/
+	}
+}
+
+func indexOfValue(clause []int, val int) int {
+	/*slowIdx := -1
+	for i := 0; i < len(clause); i++ {
+		if clause[i] == val {
+			slowIdx = i
+			break
+		}
+	}*/
+	//slowIdx = -1 // return -1
+
+	max := len(clause)
+	if max == 0 {
+		/*if slowIdx != -1 {
+			fmt.Printf("%v val:%d (%d != %d)\n", clause, val, slowIdx, -1)
+		}*/
+		return -1
+	}
+
+	// do binary search
+	i := 0
+	min := 0
+	step := max - 1
+	for {
+		if clause[i] == val {
+			/*if slowIdx != i {
+				fmt.Printf("%v val:%d (%d != %d)\n", clause, val, slowIdx, i)
+			}*/
+			return i
+		}
+
+		if clause[i] > val {
+			max = i
+			i -= step
+			if i < min {
+				/*if slowIdx != -1 {
+					fmt.Printf("%v val:%d (%d != %d)\n", clause, val, slowIdx, -1)
+				}*/
+				return -1
+			}
+
+			step >>= 1
+			if step == 0 && i > min {
+				step = 1
+			}
+		} else {
+			min = i
+			i += step
+			if i > max {
+				/*if slowIdx != -1 {
+					fmt.Printf("%v val:%d (%d != %d)\n", clause, val, slowIdx, -1)
+				}*/
+				return -1
+			}
+
+			step >>= 1
+			if step == 0 && i < max {
+				step = 1
+			}
+		}
+
+		if step == 0 {
+			/*if slowIdx != -1 {
+				fmt.Printf("%v val:%d (%d != %d) step == 0\n", clause, val, slowIdx, -1)
+			}*/
+			return -1
+		}
+	}
 }
