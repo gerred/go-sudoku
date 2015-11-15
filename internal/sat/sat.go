@@ -77,6 +77,7 @@ func NewSAT(input string) (*sat, error) {
 		line = strings.Trim(line, " \r\n\t")
 		if strings.HasPrefix(line, "c ") {
 			// skip comment
+			i--
 			continue
 		}
 		strParts = strings.SplitN(line, " ", -1)
@@ -88,7 +89,16 @@ func NewSAT(input string) (*sat, error) {
 
 		for j := 0; j < len(s.Clauses[i]); j++ {
 			v := abs(s.Clauses[i][j])
-			s.vars = append(s.vars, v)
+			found := false
+			for _, x := range s.vars {
+				if x == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.vars = append(s.vars, v)
+			}
 		}
 		if lastLine == true {
 			break
@@ -141,6 +151,7 @@ func abs(v int) int {
 }
 
 func (s *sat) Solve() *sat {
+	fmt.Printf("len(s.vars) = %d\n", len(s.vars))
 	depth := 0
 
 	// find a clause with a single variable
@@ -151,7 +162,7 @@ func (s *sat) Solve() *sat {
 			val = abs(val)
 
 			//fmt.Printf("quick find [%d]: %d %t\n", depth, val, on)
-			return set(s, val, on, 0)
+			return set(s, val, on, depth)
 		}
 	}
 
@@ -204,6 +215,19 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 			val := clause[0]
 			on := (val > 0)
 			val = abs(val)
+
+			found := false
+			for _, x := range s2.vars {
+				if x == val {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				fmt.Printf("not found %d %t\n", val, on)
+				return nil
+			}
 
 			//fmt.Printf("quick find [%d]: %d %t\n", depth+1, val, on)
 			return set(s2, val, on, depth+1)
