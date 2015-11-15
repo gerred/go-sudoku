@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type setvar struct {
+type SetVar struct {
 	VarNum int
 	Value  bool
 }
@@ -17,8 +17,9 @@ type setvar struct {
 type sat struct {
 	vars []int
 	//SetVars map[int]bool
-	SetVars []setvar
-	Clauses [][]int
+	SetVars      []SetVar
+	Clauses      [][]int
+	KnownAnswers []SetVar
 }
 
 func NewSAT(input string) (*sat, error) {
@@ -179,16 +180,17 @@ func (s *sat) Solve() *sat {
 }
 
 func set(s1 *sat, v int, value bool, depth int) *sat {
-	s2 := &sat{}
+	s2 := &sat{KnownAnswers: s1.KnownAnswers}
 	for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
 		}
 	}
 	s2.SetVars = append(s2.SetVars, s1.SetVars...)
-	s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
+	s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: value})
 	//s2.vars[depth] = k
 	//s2.SetVars[depth] = setvar{VarNum: v, Value: value}
+	//fmt.Printf("%s %d %t (%d)\n", strings.Repeat("-", depth+1), v, value, len(s1.Clauses))
 
 	signedV := v
 	if !value {
@@ -199,6 +201,7 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 		newClause := up(clause, v, value)
 		if newClause != nil {
 			if len(newClause) == 0 {
+				s2.checkKnownAnswers(v, value)
 				return nil
 			}
 			s2.Clauses = append(s2.Clauses, newClause)
@@ -226,6 +229,7 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 
 			if !found {
 				fmt.Printf("not found %d %t\n", val, on)
+				s2.checkKnownAnswers(v, value)
 				return nil
 			}
 
@@ -243,7 +247,19 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 		return s3
 	}
 
+	s2.checkKnownAnswers(v, value)
 	return nil
+}
+
+func (s *sat) checkKnownAnswers(v int, val bool) {
+	if s.KnownAnswers != nil {
+		//fmt.Printf("len(knownAnswers)=%d\n", len(s.KnownAnswers))
+		for _, ka := range s.KnownAnswers {
+			if ka.VarNum == v && ka.Value == val {
+				fmt.Printf("*** WTF? %d %t\n", v, val)
+			}
+		}
+	}
 }
 
 func up(clause []int, v int, val bool) []int {
@@ -308,7 +324,11 @@ func cut(clause []int, idx int) []int {
 	} else if idx == l-1 {
 		return clause[:idx]
 	} else {
-		return append(clause[:idx], clause[idx+1:]...)
+		var newClause []int
+		newClause = append(newClause, clause[:idx]...)
+		newClause = append(newClause, clause[idx+1:]...)
+		return newClause
+		//append(clause[:idx], clause[idx+1:]...)
 		/*newClause := make([]int, len(clause)-1)
 		i := 0
 		for j := 0; j < len(clause); j++ {
