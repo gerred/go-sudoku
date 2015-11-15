@@ -60,6 +60,7 @@ func NewSAT(input string) (*sat, error) {
 	// TODO: validate variable, clause count
 	s := &sat{
 		Clauses: make([][]int, clauseCount),
+		SetVars: make([]setvar, variableCount),
 		//SetVars: make(map[int]bool),
 	}
 
@@ -153,20 +154,22 @@ func (s *sat) Solve() *sat {
 }
 
 func set(s1 *sat, v int, value bool, depth int) *sat {
-	s2 := &sat{}
+	s2 := &sat{SetVars: s1.SetVars}
 	for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
 		}
 	}
-	s2.SetVars = append(s2.SetVars, s1.SetVars...)
-	s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
+	//s2.SetVars = append(s2.SetVars, s1.SetVars...)
+	//s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
+	//s2.vars[depth] = k
+	s2.SetVars[depth] = setvar{VarNum: v, Value: value}
 
 	signedV := v
 	if !value {
 		signedV *= -1
 	}
-	s2.Clauses = append(s2.Clauses, []int{signedV})
+	//s2.Clauses = append(s2.Clauses, []int{signedV})
 	for _, clause := range s1.Clauses {
 		newClause := up(clause, v, value)
 		if newClause != nil {
