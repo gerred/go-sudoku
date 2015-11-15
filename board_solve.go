@@ -225,6 +225,11 @@ func getCandidates(n int, store map[int]map[uint]int) map[int][]uint {
 	return list
 }
 
+func (b *board) SolvePositionNoValidate(pos int, val uint) {
+	b.solved[pos] = val
+	b.blits[pos] = 1 << (val - 1)
+}
+
 func (b *board) SolvePosition(pos int, val uint) error {
 	mask := uint(^(1 << (val - 1)))
 	if b.solved[pos] != 0 /*&& b.solved[pos] != val*/ {
@@ -233,12 +238,7 @@ func (b *board) SolvePosition(pos int, val uint) error {
 	b.solved[pos] = val
 	b.blits[pos] = 1 << (val - 1)
 
-	b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
-
-	/*if !b.loading {
-		b.Print()
-		b.PrintHints()
-	}*/
+	//b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
 
 	if err := b.Validate(); err != nil {
 		return fmt.Errorf("%#v val:%d - %s", getCoords(pos), val, err)

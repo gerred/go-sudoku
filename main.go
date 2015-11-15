@@ -42,14 +42,16 @@ func (b *board) SolveSAT() error {
 				pos := r*9 + c
 				if b.solved[pos] == 0 {
 					val := k % 10
-					fmt.Printf("r:%d c:%d val:%d\n", r, c, val)
-					err := b.SolvePosition(pos, uint(val))
-					if err != nil {
-						return err
-					}
+					//fmt.Printf("r:%d c:%d val:%d\n", r, c, val)
+					b.SolvePositionNoValidate(pos, uint(val))
 				}
 			}
 		}
+	}
+
+	err = b.Validate()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -85,7 +87,8 @@ func runFile(fileName string) {
 
 func runTop95() {
 	start := time.Now()
-	b, err := ioutil.ReadFile("./test_files/top95.txt")
+	//b, err := ioutil.ReadFile("./test_files/top95.txt")
+	b, err := ioutil.ReadFile("./test_files/sudoku17.txt")
 	if err != nil {
 		fmt.Printf("ERROR - %s\n", err)
 		return
@@ -94,6 +97,8 @@ func runTop95() {
 	r := bufio.NewReader(bytes.NewReader(b))
 	line, _ := r.ReadString('\n')
 	for i := 0; line != ""; i++ {
+		fmt.Printf("Puzzle # %d\n", i+1)
+		start1 := time.Now()
 		board, err := loadBoard([]byte(line))
 		if err != nil {
 			board.PrintHints()
@@ -119,6 +124,7 @@ func runTop95() {
 			break
 		} else {
 			board.Print()
+			fmt.Printf("Solve time: %v\n", time.Since(start1))
 		}
 
 		line, _ = r.ReadString('\n')

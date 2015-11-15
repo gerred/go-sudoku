@@ -152,7 +152,7 @@ func abs(v int) int {
 }
 
 func (s *sat) Solve() *sat {
-	fmt.Printf("len(s.vars) = %d\n", len(s.vars))
+	//fmt.Printf("len(s.vars) = %d\n", len(s.vars))
 	depth := 0
 
 	// find a clause with a single variable

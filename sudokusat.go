@@ -145,7 +145,7 @@ func (b *board) getSAT() string {
 	}
 
 	header := fmt.Sprintf("p cnf %d %d", len(vars), clauses)
-	fmt.Printf("%s\n", header)
+	//fmt.Printf("%s\n", header)
 	input := fmt.Sprintf("%s\n%s", header, buf)
 	return input
 }
