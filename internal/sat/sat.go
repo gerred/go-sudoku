@@ -60,7 +60,7 @@ func NewSAT(input string) (*sat, error) {
 	// TODO: validate variable, clause count
 	s := &sat{
 		Clauses: make([][]int, clauseCount),
-		SetVars: make([]setvar, variableCount),
+		//SetVars: make([]setvar, variableCount),
 		//SetVars: make(map[int]bool),
 	}
 
@@ -141,12 +141,26 @@ func abs(v int) int {
 }
 
 func (s *sat) Solve() *sat {
-	// let's try some clauses
-	s2 := set(s, s.vars[0], true, 0)
+	depth := 0
+
+	// find a clause with a single variable
+	for _, clause := range s.Clauses {
+		if len(clause) == 1 {
+			val := clause[0]
+			on := (val > 0)
+			val = abs(val)
+
+			//fmt.Printf("quick find [%d]: %d %t\n", depth, val, on)
+			return set(s, val, on, 0)
+		}
+	}
+
+	// let's try the first variable
+	s2 := set(s, s.vars[0], true, depth)
 	if s2 != nil {
 		return s2
 	}
-	s2 = set(s, s.vars[0], false, 0)
+	s2 = set(s, s.vars[0], false, depth)
 	if s2 != nil {
 		return s2
 	}
@@ -154,16 +168,16 @@ func (s *sat) Solve() *sat {
 }
 
 func set(s1 *sat, v int, value bool, depth int) *sat {
-	s2 := &sat{SetVars: s1.SetVars}
+	s2 := &sat{}
 	for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
 		}
 	}
-	//s2.SetVars = append(s2.SetVars, s1.SetVars...)
-	//s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
+	s2.SetVars = append(s2.SetVars, s1.SetVars...)
+	s2.SetVars = append(s2.SetVars, setvar{VarNum: v, Value: value})
 	//s2.vars[depth] = k
-	s2.SetVars[depth] = setvar{VarNum: v, Value: value}
+	//s2.SetVars[depth] = setvar{VarNum: v, Value: value}
 
 	signedV := v
 	if !value {
@@ -182,6 +196,18 @@ func set(s1 *sat, v int, value bool, depth int) *sat {
 
 	if len(s2.vars) == 0 {
 		return s2
+	}
+
+	// find a clause with a single variable
+	for _, clause := range s2.Clauses {
+		if len(clause) == 1 {
+			val := clause[0]
+			on := (val > 0)
+			val = abs(val)
+
+			//fmt.Printf("quick find [%d]: %d %t\n", depth+1, val, on)
+			return set(s2, val, on, depth+1)
+		}
 	}
 
 	s3 := set(s2, s2.vars[0], true, depth+1)
