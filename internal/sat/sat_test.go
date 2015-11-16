@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSolve(t *testing.T) {
+func testSolve(t *testing.T) {
 	inputs := []string{
 		// (a ∨ ¬b) ∧ (a ∨ b) should return a: True, b: anything
 		`p cnf 2 2
@@ -56,35 +56,67 @@ func testInput(t *testing.T, input string) {
 }
 
 func TestHasClause(t *testing.T) {
-	clause := []int{0, 2, 6, 8, 12}
-	for idx, val := range clause {
-		actual := indexOfValue(clause, val)
+	clauseIntArray := []int{0, 2, 6, 8, 12}
+	clause := intArrayToBin(clauseIntArray)
+	//fmt.Printf("%b %b\n", clause[0], clause[1])
+	for idx, val := range clauseIntArray {
+		//fmt.Printf("%d\n", idx)
+		actual := indexOfValue(clause, uint64(val))
 		if actual != idx {
-			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+			t.Fatalf("%d not found in clause %b %b. idx:%d", val, clause[0], clause[1], idx)
 		}
 	}
 
-	clause = []int{0, 2, 6, 8, 12, 14}
-	for idx, val := range clause {
-		actual := indexOfValue(clause, val)
+	clauseIntArray = []int{0, 2, 6, 8, 12, 14}
+	clause = intArrayToBin(clauseIntArray)
+	for idx, val := range clauseIntArray {
+		actual := indexOfValue(clause, uint64(val))
 		if actual != idx {
-			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+			// 110 0000 = 6
+			// 00000000000 = 0
+			// 00000000010 = 2
+			// 00000000110 = 6
+			// 00000001000 = 8
+			// 00000001100 = 12
+
+			// 111
+			// 00000000000
+			// 00000000000
+			// 00000000000
+			// 00000000000
+			//         111000000000000000000000000000000000000000000000
+			// 1234567890x1234567890x1234567890x12345678901x12345678901
+			t.Fatalf("%d not found in clause %b %b. idx:%d", val, clause[0], clause[1], idx)
 		}
 	}
 
-	clause = []int{-937, -737}
-	for idx, val := range clause {
-		actual := indexOfValue(clause, val)
+	clauseIntArray = []int{-937, -737}
+	clause = intArrayToBin(clauseIntArray)
+	for idx, val := range clauseIntArray {
+		uintVal := uint64(abs(val))
+		if val < 0 {
+			uintVal |= 0x400
+		}
+
+		//  100000
+		// 11110101001
+		// 11011100001
+		// 11011100001
+		// 000000000000000000000000000000000
+		// 111xxxx1234567890x1234567890x1234567890x12345678901x12345678901
+
+		actual := indexOfValue(clause, uintVal)
 		if actual != idx {
-			t.Fatalf("%d not found in clause %v. idx:%d", val, clause, idx)
+			t.Fatalf("%d (%b) not found in clause %b %b. idx:%d", val, uintVal, clause[0], clause[1], idx)
 		}
 	}
 }
 
 func TestUnitPropogation(t *testing.T) {
-	clause := []int{1, 2, 6, 8, 12}
+	clause := intArrayToBin([]int{1, 2, 6, 8, 12})
 
-	expected := []int{1, 2, 6, 8}
+	expected_tmp := intArrayToBin([]int{1, 2, 6, 8})
+	expected := &expected_tmp
 	actual := up(clause, 12, false)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
@@ -96,9 +128,10 @@ func TestUnitPropogation(t *testing.T) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	clause = []int{-1, 2, 6, 8, 12}
+	clause = intArrayToBin([]int{-1, 2, 6, 8, 12})
 
-	expected = []int{2, 6, 8, 12}
+	expected_tmp = intArrayToBin([]int{2, 6, 8, 12})
+	expected = &expected_tmp
 	//fmt.Printf("clause before1: %v\n", clause)
 	actual = up(clause, 1, true)
 	//fmt.Printf("clause before2: %v\n", clause)
@@ -112,4 +145,8 @@ func TestUnitPropogation(t *testing.T) {
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
+}
+
+func TestIntArrayToBin(t *testing.T) {
+
 }

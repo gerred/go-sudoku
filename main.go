@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,11 +16,15 @@ import (
 )
 
 func main() {
-	err := readStats(os.Args[1])
+	flags := flag.FlagSet{}
+	profile := flags.Bool("-profile", false, "true profile cpu/mem")
+	flags.Parse(os.Args)
+
+	/*err := readStats(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
-	return
+	return*/
 
 	//printCompactToStandard("000501000090000800060000000401000000000070090000000030800000105000200400000360000")
 
@@ -29,9 +34,16 @@ func main() {
 	b.Print()*/
 
 	start := time.Now()
+	if *profile {
+		startProfile()
+	}
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
+	//runFile("./test_files/input_no_solution.txt")
 	runList("./test_files/top95.txt")
+	if *profile {
+		stopProfile()
+	}
 	fmt.Printf("%v\n", time.Since(start))
 }
 
@@ -111,7 +123,7 @@ func (b *board) SolveSAT() error {
 		fmt.Printf("solved with SAT\n")
 
 		for _, setvar := range satSolver.SetVars {
-			k := setvar.VarNum
+			k := int(setvar.VarNum)
 			v := setvar.Value
 			if v {
 				//fmt.Printf("%d %v\n", k, v)
