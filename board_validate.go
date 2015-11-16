@@ -66,20 +66,18 @@ func validate(vals []uint) error {
 		return fmt.Errorf("len(vals) = %d", len(vals))
 	}
 
-	avail := make(map[uint]interface{})
-	for i := uint(1); i <= 9; i++ {
-		avail[i] = struct{}{}
-	}
-
+	avail := 0x1FF
 	for _, v := range vals {
 		if v == 0 {
 			continue
 		}
-		_, ok := avail[v]
-		if !ok {
+
+		mask := 1 << (v - 1)
+
+		if avail&mask != mask {
 			return fmt.Errorf("val %d repeated", v)
 		}
-		delete(avail, v)
+		avail &= ^mask
 	}
 	return nil
 }
