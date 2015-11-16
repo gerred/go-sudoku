@@ -1,12 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"reflect"
-	"strings"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) Solve() error {
 	// first iteration naked single
@@ -15,7 +9,7 @@ func (b *board) Solve() error {
 	if err := b.SolveNakedSingle(); err != nil {
 		return err
 	}
-	b.PrintHints()
+	//b.PrintHints()
 	b.loading = false
 
 	if err := b.runSolvers(b.getSolvers()); err != nil {
@@ -71,8 +65,9 @@ func (b *board) getSolvers() []solver {
 		{name: "X-WING", run: b.SolveXWing},
 		{name: "Y-WING", run: b.SolveYWing},
 		{name: "SWORDFISH", run: b.SolveSwordFish},
-		{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true, safetyCheck: true},
-		{name: "X-CYCLES", run: b.SolveXCycles, printBoard: true, safetyCheck: true},
+
+		{name: "XY-CHAIN", run: b.SolveXYChain},
+		//{name: "X-CYCLES", run: b.SolveXCycles},
 	}
 
 	return solvers
@@ -90,24 +85,18 @@ func (b *board) getSolverN(solver func(int) error, n int) func() error {
 func (b *board) runSolvers(solvers []solver) error {
 mainLoop:
 	for !b.isSolved() {
-		oldBlits := b.blits
+		b.changed = false
 		for _, solver := range solvers {
 			if solver.printBoard {
 				b.PrintHints()
 				b.PrintURL()
 			}
 
-			var testBoard *board
-
-			if solver.safetyCheck {
-				testBoard, _ = TrialAndError(*b)
-			}
-
 			if err := solver.run(); err != nil {
 				return err
 			}
-			if !reflect.DeepEqual(oldBlits, b.blits) {
-				if solver.safetyCheck && testBoard != nil {
+			if b.changed {
+				/*if solver.safetyCheck && testBoard != nil {
 					for i := 0; i < 81; i++ {
 						if b.blits[i]&testBoard.blits[i] != testBoard.blits[i] {
 							fmt.Printf("-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/\n")
@@ -121,12 +110,14 @@ mainLoop:
 						}
 					}
 					testBoard, _ = TrialAndError(*b)
-				}
+				}*/
 
 				if solver.printBoard {
 					b.PrintHints()
 					b.PrintURL()
 				}
+				//fmt.Printf("^^^ %s\n", solver.name)
+
 				continue mainLoop
 			}
 			if b.isSolved() {
@@ -134,7 +125,14 @@ mainLoop:
 			}
 		}
 
-		newBoard, err := TrialAndError(*b)
+		if !b.isSolved() {
+			err := b.SolveSAT()
+			if err != nil {
+				return err
+			}
+		}
+
+		/*newBoard, err := TrialAndError(*b)
 		if err != nil {
 			return err
 		}
@@ -143,73 +141,13 @@ mainLoop:
 		}
 
 		b.solved = newBoard.solved
-		b.blits = newBoard.blits
+		b.blits = newBoard.blits*/
 		break
 	}
 
 	fmt.Println("--- END SOLVER")
 
 	return nil
-}
-
-var its int
-
-func TrialAndError(b board) (*board, error) {
-	// what type of cell would make a good candidate?
-	// one where choosing a candidate would result in a lot of eliminations
-	// we can use b.getVisibleCellsWithHint
-
-	// cell pos, hint, number of eliminations
-	store := make(map[int]map[uint]int)
-
-	maxEliminations := 0
-	for i := 0; i < 81; i++ {
-		if b.solved[i] != 0 {
-			continue
-		}
-
-		hintEliminations := make(map[uint]int)
-		store[i] = hintEliminations
-
-		bitList := bits.GetBitList(b.blits[i])
-		for _, hint := range bitList {
-			n := len(b.getVisibleCellsWithHint(i, hint))
-			hintEliminations[hint] = n
-			if n > maxEliminations {
-				maxEliminations = n
-			}
-		}
-	}
-
-	for eliminations := maxEliminations; eliminations > 0; eliminations-- {
-		//fmt.Printf("eliminations: %d\n", eliminations)
-		posHints := getCandidates(eliminations, store)
-		if len(posHints) == 0 {
-			continue
-		}
-		for pos, hints := range posHints {
-			for _, hint := range hints {
-				//fmt.Printf("%#2v hint:%d\n", getCoords(pos), bits.GetSingleBitValue(hint))
-				// try the elimination
-				trialBoard := &board{solved: b.solved, blits: b.blits, loading: false, quiet: true}
-				trialBoard.bfDepth = b.bfDepth + 1
-				if err := trialBoard.SolvePosition(pos, bits.GetSingleBitValue(hint)); err != nil {
-					continue
-				}
-				its++
-				fmt.Printf("%s BF: %#2v %d %d\n", strings.Repeat("-", b.bfDepth), getCoords(pos), bits.GetSingleBitValue(hint), its)
-				if err := trialBoard.runSolvers(b.getFastSolvers()); err != nil {
-					//fmt.Printf("... that board didn't work\n")
-					// nope.
-				} else {
-					trialBoard.quiet = false
-					return trialBoard, nil
-				}
-			}
-		}
-	}
-
-	return nil, nil
 }
 
 func getCandidates(n int, store map[int]map[uint]int) map[int][]uint {
@@ -271,13 +209,14 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 	oldBlit := b.blits[targetPos]
 	newBlit := oldBlit & mask
 	if newBlit != oldBlit {
+		b.changed = true
 		if newBlit == 0 {
 			return fmt.Errorf("tried to remove last candidate from %#2v", getCoords(targetPos))
 		}
 
 		b.blits[targetPos] = newBlit
-		delta := oldBlit & ^newBlit
-		b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
+		//delta := oldBlit & ^newBlit
+		//b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
 		return b.Validate()
 	}
 	return nil

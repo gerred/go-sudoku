@@ -9,9 +9,27 @@ func getRCV(r int, c int, v int) int {
 	return r*100 + c*10 + v
 }
 
+func satrcToPos(r int, c int) int {
+	return (r-1)*9 + (c - 1)
+}
+
+func (b *board) hasHint(satR int, satC int, v int) bool {
+	pos := satrcToPos(satR, satC)
+	if b.solved[pos] != 0 {
+		if b.solved[pos] == uint(v) {
+			return true
+		}
+		return false
+	}
+	mask := uint(1 << (uint(v) - 1))
+	if b.blits[pos]&mask == mask {
+		return true
+	}
+	return false
+}
+
 func (b *board) getSAT() string {
 	var clauses int
-	vars := make(map[int]interface{})
 
 	buf := bytes.NewBufferString("")
 
@@ -31,6 +49,43 @@ func (b *board) getSAT() string {
 		}
 	}
 
+	// apply known negative values
+	// each row
+	for r := 1; r <= 9; r++ {
+		// each column
+		for c := 1; c <= 9; c++ {
+			offset := (r-1)*9 + (c - 1)
+			if b.solved[offset] != 0 {
+				continue
+			}
+			for v := uint(1); v <= 9; v++ {
+				mask := uint(1 << (v - 1))
+				if b.blits[offset]&mask != mask {
+					cur := getRCV(r, c, int(v))
+					buf.WriteString(fmt.Sprintf("-%d 0\n", cur))
+					clauses++
+				}
+			}
+		}
+	}
+
+	// not sure this RCV block will help (update: it definitely does).
+	// it indicates each cell must have one of the values 1-9.
+
+	// each row
+	for r := 1; r <= 9; r++ {
+		// each column
+		for c := 1; c <= 9; c++ {
+			// each value
+			for v := 1; v <= 9; v++ {
+				cur := getRCV(r, c, v)
+				buf.WriteString(fmt.Sprintf("%d ", cur))
+			}
+			buf.WriteString("0\n")
+			clauses++
+		}
+	}
+
 	// each value
 	for v := 1; v <= 9; v++ {
 		// each row
@@ -38,12 +93,11 @@ func (b *board) getSAT() string {
 			// each column
 			for c := 1; c <= 9; c++ {
 				cur := getRCV(r, c, v)
-				vars[cur] = struct{}{}
-
 				buf.WriteString(fmt.Sprintf("%d ", cur))
 			}
 			buf.WriteString("0\n")
 			clauses++
+
 			// each combination of two values
 			for c := 1; c <= 9; c++ {
 				cur := getRCV(r, c, v)
@@ -82,7 +136,6 @@ func (b *board) getSAT() string {
 		for b := 0; b < 9; b++ {
 			rOffset := (b / 3) * 3
 			cOffset := (b % 3) * 3
-			//fmt.Printf("b:%d r-offset:%d c-offset:%d\n", b, rOffset, cOffset)
 			// each row
 			for r := rOffset + 1; r <= rOffset+3; r++ {
 				// each column
@@ -144,7 +197,7 @@ func (b *board) getSAT() string {
 		}
 	}
 
-	header := fmt.Sprintf("p cnf %d %d", len(vars), clauses)
+	header := fmt.Sprintf("p cnf %d %d", 9*9*9, clauses)
 	//fmt.Printf("%s\n", header)
 	input := fmt.Sprintf("%s\n%s", header, buf)
 	return input

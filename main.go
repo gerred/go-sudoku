@@ -5,19 +5,97 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
+	"runtime/pprof"
+	"strings"
 	"time"
 
 	"github.com/judwhite/go-sudoku/internal/sat"
 )
 
 func main() {
+	err := readStats(os.Args[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
 
-	//runFile("./test_files/12_tough_20151107_173.txt") // TODO
-	//runFile("./test_files/input.txt")
+	//printCompactToStandard("000501000090000800060000000401000000000070090000000030800000105000200400000360000")
 
-	//runFile("./test_files/28_xcycles.txt")
+	/*b, _ := loadBoard([]byte("_ _ _ _ _ 2 _ _ _ _ _ _ _ 7 _ _ _ 1 7 _ _ 3 _ _ _ 9 _ 8 _ _ 7 _ _ _ _ _ _ 2 _ 8 9 _ 6 _ _ _ 1 3 _ _ 6 _ _ _ _ 9 _ _ 5 _ 8 2 4 _ _ _ _ _ 8 9 1 _ _ _ _ _ _ _ _ _ _"))
+	start := time.Now()
+	b.Solve()
+	b.Print()*/
 
-	runTop95()
+	start := time.Now()
+	//runFile("./test_files/29_ben.txt")
+	//runFile("./test_files/12_tough_20151107_173.txt")
+	runList("./test_files/top95.txt")
+	fmt.Printf("%v\n", time.Since(start))
+}
+
+func startProfile() {
+	f, err := os.Create("go-sudoku.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+}
+
+func stopProfile() {
+	f2, err := os.Create("go-sudoku.mprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(f2)
+	f2.Close()
+
+	pprof.StopCPUProfile()
+}
+
+func printCompactToStandard(b string) {
+	i := 0
+	for r := 0; r < 9; r++ {
+		for c := 0; c < 9; c++ {
+			if c != 0 {
+				fmt.Print(" ")
+			}
+			if b[i] == '0' {
+				fmt.Print("_")
+			} else {
+				fmt.Print(string(b[i]))
+			}
+			i++
+		}
+		fmt.Println()
+	}
+}
+
+func readStats(fileName string) error {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	line, err := r.ReadString('\n')
+	const prefix = "Solve time: "
+	puzzle := 1
+	for line != "" && err == nil {
+		if strings.HasPrefix(line, prefix) {
+			line = strings.Trim(line[len(prefix):], " \n\r")
+			d, err := time.ParseDuration(line)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%d\t%v\n", puzzle, d.Nanoseconds()/int64(time.Millisecond))
+			puzzle++
+		}
+		line, err = r.ReadString('\n')
+	}
+	return nil
 }
 
 func (b *board) SolveSAT() error {
@@ -85,10 +163,9 @@ func runFile(fileName string) {
 	}
 }
 
-func runTop95() {
-	start := time.Now()
-	//b, err := ioutil.ReadFile("./test_files/top95.txt")
-	b, err := ioutil.ReadFile("./test_files/sudoku17.txt")
+func runList(fileName string) {
+	b, err := ioutil.ReadFile(fileName)
+	//b, err := ioutil.ReadFile("./test_files/sudoku17.txt")
 	if err != nil {
 		fmt.Printf("ERROR - %s\n", err)
 		return
@@ -106,7 +183,7 @@ func runTop95() {
 			return
 		}
 
-		if err = board.SolveSAT(); err != nil {
+		if err = board.Solve(); err != nil {
 			fmt.Printf("ERROR - %s\n", err)
 			return
 		}
@@ -129,5 +206,4 @@ func runTop95() {
 
 		line, _ = r.ReadString('\n')
 	}
-	fmt.Printf("%v\n", time.Since(start))
 }

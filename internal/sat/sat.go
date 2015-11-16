@@ -343,13 +343,15 @@ func cut(clause []int, idx int) []int {
 }
 
 func indexOfValue(clause []int, val int) int {
-	/*slowIdx := -1
 	for i := 0; i < len(clause); i++ {
 		if clause[i] == val {
-			slowIdx = i
-			break
+			return i
 		}
-	}*/
+		/*if clause[i] >= val {
+			return -1
+		}*/
+	}
+	return -1
 	//slowIdx = -1 // return -1
 
 	max := len(clause)

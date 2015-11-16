@@ -11,6 +11,7 @@ type board struct {
 	loading bool
 	quiet   bool
 	bfDepth int
+	changed bool
 }
 
 type coords struct {
