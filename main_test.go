@@ -152,6 +152,7 @@ func TestBoards(t *testing.T) {
 		"./test_files/27_xcycles.txt",
 		"./test_files/28_xcycles.txt",
 		"./test_files/29_ben.txt",
+		"./test_files/30_starburst_leo.txt",
 	}
 
 	for _, file := range files {
