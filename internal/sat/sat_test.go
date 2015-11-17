@@ -61,7 +61,7 @@ func TestHasClause(t *testing.T) {
 	//fmt.Printf("%b %b\n", clause[0], clause[1])
 	for idx, val := range clauseIntArray {
 		//fmt.Printf("%d\n", idx)
-		actual := indexOfValue(clause, uint64(val))
+		actual := indexOfValue(&clause, uint64(val))
 		if actual != idx {
 			t.Fatalf("%d not found in clause %b %b. idx:%d", val, clause[0], clause[1], idx)
 		}
@@ -70,7 +70,7 @@ func TestHasClause(t *testing.T) {
 	clauseIntArray = []int{0, 2, 6, 8, 12, 14}
 	clause = intArrayToBin(clauseIntArray)
 	for idx, val := range clauseIntArray {
-		actual := indexOfValue(clause, uint64(val))
+		actual := indexOfValue(&clause, uint64(val))
 		if actual != idx {
 			// 110 0000 = 6
 			// 00000000000 = 0
@@ -105,7 +105,7 @@ func TestHasClause(t *testing.T) {
 		// 000000000000000000000000000000000
 		// 111xxxx1234567890x1234567890x1234567890x12345678901x12345678901
 
-		actual := indexOfValue(clause, uintVal)
+		actual := indexOfValue(&clause, uintVal)
 		if actual != idx {
 			t.Fatalf("%d (%b) not found in clause %b %b. idx:%d", val, uintVal, clause[0], clause[1], idx)
 		}
@@ -117,13 +117,13 @@ func TestUnitPropogation(t *testing.T) {
 
 	expected_tmp := intArrayToBin([]int{1, 2, 6, 8})
 	expected := &expected_tmp
-	actual := up(clause, 12, false)
+	actual := up(&clause, 12, false)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
 	expected = nil
-	actual = up(clause, 12, true)
+	actual = up(&clause, 12, true)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
@@ -133,7 +133,7 @@ func TestUnitPropogation(t *testing.T) {
 	expected_tmp = intArrayToBin([]int{2, 6, 8, 12})
 	expected = &expected_tmp
 	//fmt.Printf("clause before1: %v\n", clause)
-	actual = up(clause, 1, true)
+	actual = up(&clause, 1, true)
 	//fmt.Printf("clause before2: %v\n", clause)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
@@ -141,7 +141,7 @@ func TestUnitPropogation(t *testing.T) {
 
 	expected = nil
 	//fmt.Printf("clause before3: %v\n", clause)
-	actual = up(clause, 1, false)
+	actual = up(&clause, 1, false)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}

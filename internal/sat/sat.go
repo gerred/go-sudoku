@@ -213,7 +213,7 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 	s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
 
 	for _, clause := range s1.Clauses {
-		newClause := up(clause, v, isOn)
+		newClause := up(&clause, v, isOn)
 		if newClause != nil {
 			if newClause[0] == 0 {
 				//s2.checkKnownAnswers(v, value)
@@ -277,7 +277,7 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 	}
 }*/
 
-func up(clause [2]uint64, v uint64, isOn bool) *[2]uint64 {
+func up(clause *[2]uint64, v uint64, isOn bool) *[2]uint64 {
 	//	fmt.Printf("-------\n")
 	//	fmt.Printf("v:%d clause:%v\n", v, clause)
 	var idx int
@@ -295,7 +295,7 @@ func up(clause [2]uint64, v uint64, isOn bool) *[2]uint64 {
 		return cut(clause, idx)
 	} else {
 		//fmt.Printf("nada: %v\n", clause)
-		return &clause
+		return clause
 	}
 
 	/*newClause := make([]int, 0)
@@ -317,7 +317,7 @@ func up(clause [2]uint64, v uint64, isOn bool) *[2]uint64 {
 	return newClause*/
 }
 
-func cut(clause [2]uint64, idx int) *[2]uint64 {
+func cut(clause *[2]uint64, idx int) *[2]uint64 {
 	var newClause [2]uint64
 	length := int((clause[0] & lenMask) >> 59)
 	if idx == 0 && length == 1 {
@@ -369,21 +369,18 @@ func cut(clause [2]uint64, idx int) *[2]uint64 {
 	}*/
 }
 
-func indexOfValue(clause [2]uint64, val uint64) int {
+func indexOfValue(clause *[2]uint64, val uint64) int {
 	//fmt.Printf("-- %011b %011b, %011b\n", clause[0], clause[1], val)
 	length := int((clause[0] & lenMask) >> 59)
 	if length == 0 {
 		return -1
 	}
+
 	shift := uint(44)
 	j := 0
 	cur := clause[0]
 	for i := 0; i < length; i++ {
 		curval := (cur >> shift) & 0x7FF
-		//fmt.Printf("curval[%d]: %011b\n", i, curval)
-		//if curval > val {
-		//	return -1
-		//}
 		if curval == val {
 			return i
 		}
@@ -398,33 +395,42 @@ func indexOfValue(clause [2]uint64, val uint64) int {
 	}
 	return -1
 
-	// slice iterate
-	/*for i := 0; i < len(clause); i++ {
-		if clause[i] == val {
-			return i
-		}
-	}
-	return -1*/
-
 	// binary search
-	/*max := len(clause)
-	if max == 0 {
-		return -1
-	}
-
-	// do binary search
-	i := 0
+	/*i := 0
 	min := 0
-	step := max - 1
+	max := length
+	step := length - 1
+	var findVal int
+	findVal = int(val)
+	if val&0x400 == 0x400 {
+		findVal = (findVal & 0x3FF) * -1 // flip sign
+	}
+	//fmt.Printf("index-of: %b %b val:%d\n", clause[0], clause[1], findVal)
 	for {
-		if clause[i] == val {
+		// 44, 33, 22, 11 0
+		var curval int
+		if i >= 5 {
+			shift := uint(44 - ((i - 5) * 11))
+			curval = int((clause[1] >> shift) & 0x7FF)
+		} else {
+			shift := uint(44 - (i * 11))
+			curval = int((clause[0] >> shift) & 0x7FF)
+		}
+
+		if curval&0x400 == 0x400 {
+			curval = (curval & 0x3FF) * -1
+			//fmt.Printf("-- curval: %d\n", curval)
+		}
+
+		if curval == findVal {
 			return i
 		}
 
-		if clause[i] > val {
+		if curval > findVal {
 			max = i
 			i -= step
 			if i < min {
+				//fmt.Printf("i < min\n")
 				return -1
 			}
 
@@ -436,6 +442,7 @@ func indexOfValue(clause [2]uint64, val uint64) int {
 			min = i
 			i += step
 			if i > max {
+				//fmt.Printf("i > max\n")
 				return -1
 			}
 
@@ -445,8 +452,10 @@ func indexOfValue(clause [2]uint64, val uint64) int {
 			}
 		}
 
+		//fmt.Printf("- new step: %d new i: %d\n", step, i)
 		if step == 0 {
 			return -1
 		}
-	}*/
+	}
+	return -1*/
 }

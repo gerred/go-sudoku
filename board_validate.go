@@ -58,6 +58,30 @@ func (b *board) Validate() error {
 		}
 	}
 
+	return b.ValidateKnownAnswer()
+}
+
+func (b *board) ValidateKnownAnswer() error {
+	if b.knownAnswer == nil {
+		return nil
+	}
+
+	for pos := 0; pos < 81; pos++ {
+		ka := uint(b.knownAnswer[pos])
+		if b.solved[pos] != 0 {
+			if b.solved[pos] != ka {
+				return fmt.Errorf("pos %#2v solved with %d, known answer is %d", getCoords(pos), b.solved[pos], ka)
+			}
+		} else {
+			blit := b.blits[pos]
+			kaMask := uint(1 << (ka - 1))
+
+			if blit&kaMask != kaMask {
+				return fmt.Errorf("pos %#2v missing known answer %d as hint", getCoords(pos), ka)
+			}
+		}
+	}
+
 	return nil
 }
 

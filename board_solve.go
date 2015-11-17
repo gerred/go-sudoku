@@ -1,15 +1,29 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+
+	"github.com/judwhite/go-sudoku/internal/bits"
+)
 
 func (b *board) Solve() error {
 	// first iteration naked single
 	b.loading = true // turn off logging, this run is boring
-	//fmt.Println("--- NAKED SINGLE: FIRST ITERATION")
+
+	if b.verbose {
+		b.PrintHints()
+		b.Log(false, -1, "NAKED SINGLE: FIRST ITERATION")
+	}
+
 	if err := b.SolveNakedSingle(); err != nil {
 		return err
 	}
-	//b.PrintHints()
+
+	if b.verbose {
+		b.PrintHints()
+	}
+
 	b.loading = false
 
 	if err := b.runSolvers(b.getSolvers()); err != nil {
@@ -92,6 +106,10 @@ mainLoop:
 				b.PrintURL()
 			}
 
+			if b.verbose {
+				b.Log(false, -1, solver.name)
+			}
+
 			if err := solver.run(); err != nil {
 				return err
 			}
@@ -112,11 +130,10 @@ mainLoop:
 					testBoard, _ = TrialAndError(*b)
 				}*/
 
-				if solver.printBoard {
+				if solver.printBoard || b.verbose {
 					b.PrintHints()
 					b.PrintURL()
 				}
-				//fmt.Printf("^^^ %s\n", solver.name)
 
 				continue mainLoop
 			}
@@ -126,7 +143,10 @@ mainLoop:
 		}
 
 		if !b.isSolved() {
+			//b.Log(false, -1, "Starting SAT solver...")
+			start := time.Now()
 			err := b.SolveSAT()
+			fmt.Printf("sat time: %v\n", time.Since(start))
 			if err != nil {
 				return err
 			}
@@ -176,7 +196,9 @@ func (b *board) SolvePosition(pos int, val uint) error {
 	b.solved[pos] = val
 	b.blits[pos] = 1 << (val - 1)
 
-	//b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
+	if b.verbose {
+		b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
+	}
 
 	if err := b.Validate(); err != nil {
 		return fmt.Errorf("%#v val:%d - %s", getCoords(pos), val, err)
@@ -186,9 +208,9 @@ func (b *board) SolvePosition(pos int, val uint) error {
 		return err
 	}
 
-	/*if !b.loading {
+	if !b.loading && b.verbose {
 		b.PrintHints()
-	}*/
+	}
 
 	return nil
 }
@@ -215,8 +237,10 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 		}
 
 		b.blits[targetPos] = newBlit
-		//delta := oldBlit & ^newBlit
-		//b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
+		if b.verbose {
+			delta := oldBlit & ^newBlit
+			b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
+		}
 		return b.Validate()
 	}
 	return nil

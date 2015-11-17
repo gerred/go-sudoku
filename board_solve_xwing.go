@@ -15,18 +15,11 @@ func (b *board) SolveXWing() error {
 			continue
 		}
 
-		// TODO: remove, temp to cleanup XWING candidates
-		if err := b.SolveNakedSingle(); err != nil {
-			return err
-		}
-		if err := b.SolveHiddenSingle(); err != nil {
-			return err
-		}
-		// END TODO
-
 		blit := b.blits[i]
 		//c1 := getCoords(i)
 
+		// dims: operations using a row or column view as the starting point,
+		//       the inverse being the elimination op
 		dims := []struct {
 			op        containerOperator
 			op2       containerOperator
@@ -44,9 +37,11 @@ func (b *board) SolveXWing() error {
 			},
 		}
 
+		bitList := bits.GetBitList(blit)
 		for _, dim := range dims {
-			bitList := bits.GetBitList(blit)
 			for _, bit := range bitList {
+				// find target cells with the same hint as the source cell,
+				// populate the "items *[]int" slice with candidate cells
 				findPairs := func(items *[]int) func(target int, source int) error {
 					return func(target int, source int) error {
 						if target == source {
@@ -59,28 +54,34 @@ func (b *board) SolveXWing() error {
 					}
 				}
 
+				// get cells with a matching pair in the target dimension (row or column)
 				var pairs []int
 				if err := dim.op(i, findPairs(&pairs)); err != nil {
 					return err
 				}
 
+				// ensure only one pair exists
 				if len(pairs) != 1 {
 					continue
 				}
+				// assigned the "locked pair position"
 				lockedPairPos := pairs[0]
 				//c2 := getCoords(lockedPairPos)
 
+				// find all pairs with the original cell in the inverse dimension
 				var pairs21 []int
 				if err := dim.op2(i, findPairs(&pairs21)); err != nil {
 					return err
 				}
 
+				// find all pairs with the "locked pair" cell in the inverse dimension
 				var pairs22 []int
 				if err := dim.op2(lockedPairPos, findPairs(&pairs22)); err != nil {
 					return err
 				}
 
-				// TODO: item21/item22 must only cell with hin in their shared row/column
+				// TODO: item21/item22 must be the only cell with hint in their shared row/column
+				//       NOTE: it looks like dim.isAligned is taking care of this.
 				for _, item21 := range pairs21 {
 					c3 := getCoords(item21)
 
@@ -120,14 +121,14 @@ func (b *board) SolveXWing() error {
 								}
 							}
 
-							/*if b.willUpdateCandidates(target, source, ^bit) && !logged {
+							/*if !logged && b.willUpdateCandidates(target, source, ^bit) {
 								logged = true
 								b.PrintHints()
 								fmt.Printf("xwing: val:%d\n", bits.GetSingleBitValue(bit))
-								fmt.Printf("- %#2v\n", c1)
-								fmt.Printf("- %#2v\n", c2)
-								fmt.Printf("- %#2v\n", c3)
-								fmt.Printf("- %#2v\n", c4)
+								fmt.Printf("-- %#2v\n", c1)
+								fmt.Printf("-- %#2v\n", c2)
+								fmt.Printf("-- %#2v\n", c3)
+								fmt.Printf("-- %#2v\n", c4)
 							}*/
 
 							return b.updateCandidates(target, source, ^bit)
@@ -138,11 +139,16 @@ func (b *board) SolveXWing() error {
 								return err
 							}
 						}
+
+						if b.changed {
+							// let simpler techniques take over
+							//b.Log(false, -1, "xwing: change detected")
+							return nil
+						}
 					}
 				}
 			}
 		}
-
 	}
 	return nil
 }

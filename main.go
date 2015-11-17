@@ -17,30 +17,43 @@ import (
 
 func main() {
 	flags := flag.FlagSet{}
-	profile := flags.Bool("-profile", false, "true profile cpu/mem")
-	flags.Parse(os.Args)
-
-	/*err := readStats(os.Args[1])
-	if err != nil {
+	profile := flags.Bool("profile", false, "true profile cpu/mem")
+	max_iterations := flags.Int("run", -1, "max iterations")
+	read_stats := flags.String("readstats", "", "read stats from long run, print time taken per puzzle")
+	if err := flags.Parse(os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
-	return*/
 
-	//printCompactToStandard("000501000090000800060000000401000000000070090000000030800000105000200400000360000")
+	_ = max_iterations
 
-	/*b, _ := loadBoard([]byte("_ _ _ _ _ 2 _ _ _ _ _ _ _ 7 _ _ _ 1 7 _ _ 3 _ _ _ 9 _ 8 _ _ 7 _ _ _ _ _ _ 2 _ 8 9 _ 6 _ _ _ 1 3 _ _ 6 _ _ _ _ 9 _ _ 5 _ 8 2 4 _ _ _ _ _ 8 9 1 _ _ _ _ _ _ _ _ _ _"))
-	start := time.Now()
-	b.Solve()
-	b.Print()*/
+	if *read_stats != "" {
+		err := readStats(*read_stats)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	start := time.Now()
 	if *profile {
 		startProfile()
 	}
+
+	printCompactToStandard("210300000000060050000000000300000702004050000000000100000102080036000000000700000")
+
+	//runFile("./test_files/29_ben.txt")
+
+	b, _ := loadBoard([]byte("210300000000060050000000000300000702004050000000000100000102080036000000000700000"))
+	b.Solve()
+	b.Print()
+
+	/*start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
 	//runFile("./test_files/input_no_solution.txt")
-	runList("./test_files/top95.txt")
+	//runList("./test_files/top95.txt")
+	runList("./test_files/sudoku17.txt", *max_iterations)*/
+
 	if *profile {
 		stopProfile()
 	}
@@ -175,7 +188,7 @@ func runFile(fileName string) {
 	}
 }
 
-func runList(fileName string) {
+func runList(fileName string, max_iterations int) {
 	b, err := ioutil.ReadFile(fileName)
 	//b, err := ioutil.ReadFile("./test_files/sudoku17.txt")
 	if err != nil {
@@ -185,7 +198,7 @@ func runList(fileName string) {
 
 	r := bufio.NewReader(bytes.NewReader(b))
 	line, _ := r.ReadString('\n')
-	for i := 0; line != ""; i++ {
+	for i := 0; line != "" && (max_iterations == -1 || i < max_iterations); i++ {
 		fmt.Printf("Puzzle # %d\n", i+1)
 		start1 := time.Now()
 		board, err := loadBoard([]byte(line))

@@ -6,12 +6,13 @@ import (
 )
 
 type board struct {
-	solved  [81]uint
-	blits   [81]uint
-	loading bool
-	quiet   bool
-	bfDepth int
-	changed bool
+	solved      [81]uint
+	blits       [81]uint
+	loading     bool
+	bfDepth     int
+	changed     bool
+	verbose     bool
+	knownAnswer *[81]byte
 }
 
 type coords struct {
@@ -142,6 +143,7 @@ func loadBoard(b []byte) (*board, error) {
 
 	//board.Print()
 	board.PrintHints()
+	board.PrintURL()
 
 	board.loading = false
 
