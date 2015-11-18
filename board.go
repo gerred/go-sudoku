@@ -142,8 +142,8 @@ func loadBoard(b []byte) (*board, error) {
 	}
 
 	//board.Print()
-	board.PrintHints()
-	board.PrintURL()
+	//board.PrintHints()
+	//board.PrintURL()
 
 	board.loading = false
 

@@ -45,25 +45,16 @@ func main() {
 
 	// UNSAT: 020400006400089000000007004001008060000700008030060500060000010005000300910800007
 	// SAT: 020400000400089000000007004001008060000700008030060500060000010005000300910800007
-	/*b, _ := loadBoard([]byte(`_ 2 _ 4 _ _ _ _ _
-	4 _ _ _ 8 9 _ _ _
-	_ _ _ _ _ 7 _ _ 4
-	_ _ 1 _ _ 8 _ 6 _
-	_ _ _ 7 _ _ _ _ 8
-	_ 3 _ _ 6 _ 5 _ _
-	_ 6 _ _ _ _ _ 1 _
-	_ _ 5 _ _ _ 3 _ _
-	9 1 _ 8 _ _ _ _ 7`))
-		b.Print()
-		b.Solve()
-		b.Print()*/
+	b, _ := loadBoard([]byte("123456789456000000789000000000000000000000000000000000000000000000000000000000000"))
+	b.Solve()
+	b.Print()
 
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
 	//runFile("./test_files/input_no_solution.txt")
 	//runList("./test_files/top95.txt", *max_iterations)
-	runList("./test_files/sudoku17.txt", *max_iterations)
+	//runList("./test_files/sudoku17.txt", *max_iterations)
 
 	if *profile {
 		stopProfile()
