@@ -39,20 +39,20 @@ func main() {
 		startProfile()
 	}
 
-	printCompactToStandard("210300000000060050000000000300000702004050000000000100000102080036000000000700000")
+	//printCompactToStandard("210300000000060050000000000300000702004050000000000100000102080036000000000700000")
 
-	//runFile("./test_files/29_ben.txt")
+	//runFile("./test_files/12_tough_20151107_173.txt")
 
-	b, _ := loadBoard([]byte("210300000000060050000000000300000702004050000000000100000102080036000000000700000"))
+	b, _ := loadBoard([]byte("710050000000600050000000000000001400006000080200070000060800000003000200000000107"))
 	b.Solve()
 	b.Print()
 
-	/*start := time.Now()
+	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
 	//runFile("./test_files/input_no_solution.txt")
-	//runList("./test_files/top95.txt")
-	runList("./test_files/sudoku17.txt", *max_iterations)*/
+	//runList("./test_files/top95.txt", *max_iterations)
+	//runList("./test_files/sudoku17.txt", *max_iterations)
 
 	if *profile {
 		stopProfile()

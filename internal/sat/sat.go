@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const lenMask = 0xF800000000000000
+const len1 = 0x800000000000000
+
+var notFound *[2]uint64 = &[2]uint64{}
+
 type SetVar struct {
 	VarNum uint64
 	Value  bool
@@ -59,8 +64,6 @@ func NewSAT(input string) (*sat, error) {
 	// TODO: validate variable, clause count
 	s := &sat{
 		Clauses: make([][2]uint64, clauseCount),
-		//SetVars: make([]setvar, variableCount),
-		//SetVars: make(map[int]bool),
 	}
 
 	// get clauses
@@ -154,7 +157,6 @@ func getIntArray(values []string, sortValues bool, trimEnd bool) ([]int, error) 
 		if list[len(list)-1] != 0 {
 			return nil, errors.New("error parsing line, must end in \"0\"")
 		}
-		//list = cut(list, len(list)-1)
 		list = list[:len(list)-1]
 	}
 
@@ -172,20 +174,15 @@ func abs(v int) int {
 	return v * -1
 }
 
-const lenMask = 0xF800000000000000
-const len1 = 0x800000000000000
-
 func (s *sat) Solve() *sat {
-	//fmt.Printf("len(s.vars) = %d\n", len(s.vars))
-	//depth := 0
 	// find a clause with a single variable
 	for _, clause := range s.Clauses {
-		if clause[0]&lenMask == len1 {
+		length := clause[0] & lenMask
+		if length == len1 {
 			val := clause[0] >> 44
 			on := (val&0x400 == 0)
 			val = val & 0x3FF
 
-			//fmt.Printf("quick find [%d]: %d %t\n", depth, val, on)
 			return set(s, val, on)
 		}
 	}
@@ -209,27 +206,27 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 			s2.vars = append(s2.vars, k)
 		}
 	}
-	s2.SetVars = append(s2.SetVars, s1.SetVars...)
-	s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
 
 	for _, clause := range s1.Clauses {
 		newClause := up(&clause, v, isOn)
 		if newClause != nil {
-			if newClause[0] == 0 {
-				//s2.checkKnownAnswers(v, value)
-				return nil
+			if newClause != notFound {
+				s2.Clauses = append(s2.Clauses, *newClause)
 			}
-			s2.Clauses = append(s2.Clauses, *newClause)
+		} else {
+			return nil
 		}
 	}
 
 	if len(s2.vars) == 0 {
+		s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
 		return s2
 	}
 
 	// find a clause with a single variable
 	for _, clause := range s2.Clauses {
-		if clause[0]&lenMask == len1 {
+		length := clause[0] & lenMask
+		if length == len1 {
 			val := clause[0] >> 44
 			on := (val&0x400 == 0)
 			val = val & 0x3FF
@@ -243,26 +240,29 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 			}
 
 			if !found {
-				//fmt.Printf("not found %d %t\n", val, on)
-				//s2.checkKnownAnswers(v, value)
 				return nil
 			}
 
-			//fmt.Printf("quick find [%d]: %d %t\n", depth+1, val, on)
-			return set(s2, val, on)
+			s3 := set(s2, val, on)
+			if s3 == nil {
+				return nil
+			}
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: val, Value: on})
+			return s3
 		}
 	}
 
 	s3 := set(s2, s2.vars[0], true)
 	if s3 != nil {
+		s3.SetVars = append(s3.SetVars, SetVar{VarNum: s2.vars[0], Value: true})
 		return s3
 	}
 	s3 = set(s2, s2.vars[0], false)
 	if s3 != nil {
+		s3.SetVars = append(s3.SetVars, SetVar{VarNum: s2.vars[0], Value: false})
 		return s3
 	}
 
-	//s2.checkKnownAnswers(v, value)
 	return nil
 }
 
@@ -278,52 +278,30 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 }*/
 
 func up(clause *[2]uint64, v uint64, isOn bool) *[2]uint64 {
-	//	fmt.Printf("-------\n")
-	//	fmt.Printf("v:%d clause:%v\n", v, clause)
 	var idx int
 	if idx = indexOfValue(clause, v); idx != -1 {
 		if isOn {
-			return nil
+			return notFound
 		}
-		//fmt.Printf("pos-idx:%d\n", idx)
 		return cut(clause, idx)
 	} else if idx = indexOfValue(clause, v|0x400); idx != -1 {
 		if !isOn {
-			return nil
+			return notFound
 		}
-		//fmt.Printf("neg-idx:%d\n", idx)
 		return cut(clause, idx)
 	} else {
-		//fmt.Printf("nada: %v\n", clause)
 		return clause
 	}
-
-	/*newClause := make([]int, 0)
-	for _, k := range clause {
-		if k == v {
-			// true statement
-			if val {
-				return nil
-			}
-		} else if k == -v {
-			// true statement
-			if !val {
-				return nil
-			}
-		} else {
-			newClause = append(newClause, k)
-		}
-	}
-	return newClause*/
 }
 
 func cut(clause *[2]uint64, idx int) *[2]uint64 {
-	var newClause [2]uint64
-	length := int((clause[0] & lenMask) >> 59)
-	if idx == 0 && length == 1 {
-		return &newClause
+	if clause[0]&lenMask == len1 {
+		return nil
 	}
 
+	var newClause [2]uint64
+
+	length := int((clause[0] & lenMask) >> 59)
 	newClause[0] = uint64(length-1) << 59
 
 	shift := uint(44)
@@ -353,24 +331,9 @@ func cut(clause *[2]uint64, idx int) *[2]uint64 {
 	}
 	return &newClause
 
-	/*l := len(clause)
-	if idx == 0 {
-		if l == 1 {
-			return []int{}
-		}
-		return clause[1:]
-	} else if idx == l-1 {
-		return clause[:idx]
-	} else {
-		var newClause []int
-		newClause = append(newClause, clause[:idx]...)
-		newClause = append(newClause, clause[idx+1:]...)
-		return newClause
-	}*/
 }
 
 func indexOfValue(clause *[2]uint64, val uint64) int {
-	//fmt.Printf("-- %011b %011b, %011b\n", clause[0], clause[1], val)
 	length := int((clause[0] & lenMask) >> 59)
 	if length == 0 {
 		return -1

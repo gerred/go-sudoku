@@ -252,7 +252,7 @@ func Test13329(t *testing.T) {
 	*/
 
 	//b.quiet = true
-	b.verbose = true
+	//b.verbose = true
 
 	// check board is in expected initial state
 	//testHint(t, b, 5, 6, []uint{5, 7})
