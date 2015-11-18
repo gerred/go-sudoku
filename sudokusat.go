@@ -31,7 +31,9 @@ func (b *board) hasHint(satR int, satC int, v int) bool {
 func (b *board) getSAT() string {
 	var clauses int
 
+	singlebuf := bytes.NewBufferString("")
 	buf := bytes.NewBufferString("")
+	longbuf := bytes.NewBufferString("")
 
 	// apply known values
 
@@ -43,7 +45,7 @@ func (b *board) getSAT() string {
 			v := int(b.solved[offset])
 			if v != 0 {
 				cur := getRCV(r, c, v)
-				buf.WriteString(fmt.Sprintf("%d 0\n", cur))
+				singlebuf.WriteString(fmt.Sprintf("%d 0\n", cur))
 				clauses++
 			}
 		}
@@ -62,7 +64,7 @@ func (b *board) getSAT() string {
 				mask := uint(1 << (v - 1))
 				if b.blits[offset]&mask != mask {
 					cur := getRCV(r, c, int(v))
-					buf.WriteString(fmt.Sprintf("-%d 0\n", cur))
+					singlebuf.WriteString(fmt.Sprintf("-%d 0\n", cur))
 					clauses++
 				}
 			}
@@ -79,9 +81,9 @@ func (b *board) getSAT() string {
 			// each value
 			for v := 1; v <= 9; v++ {
 				cur := getRCV(r, c, v)
-				buf.WriteString(fmt.Sprintf("%d ", cur))
+				longbuf.WriteString(fmt.Sprintf("%d ", cur))
 			}
-			buf.WriteString("0\n")
+			longbuf.WriteString("0\n")
 			clauses++
 		}
 	}
@@ -93,9 +95,9 @@ func (b *board) getSAT() string {
 			// each column
 			for c := 1; c <= 9; c++ {
 				cur := getRCV(r, c, v)
-				buf.WriteString(fmt.Sprintf("%d ", cur))
+				longbuf.WriteString(fmt.Sprintf("%d ", cur))
 			}
-			buf.WriteString("0\n")
+			longbuf.WriteString("0\n")
 			clauses++
 
 			// each combination of two values
@@ -116,9 +118,9 @@ func (b *board) getSAT() string {
 			for r := 1; r <= 9; r++ {
 				cur := getRCV(r, c, v)
 
-				buf.WriteString(fmt.Sprintf("%d ", cur))
+				longbuf.WriteString(fmt.Sprintf("%d ", cur))
 			}
-			buf.WriteString("0\n")
+			longbuf.WriteString("0\n")
 			clauses++
 			// each combination of two values
 			for r := 1; r <= 9; r++ {
@@ -142,10 +144,10 @@ func (b *board) getSAT() string {
 				for c := cOffset + 1; c <= cOffset+3; c++ {
 					cur := getRCV(r, c, v)
 
-					buf.WriteString(fmt.Sprintf("%d ", cur))
+					longbuf.WriteString(fmt.Sprintf("%d ", cur))
 				}
 			}
-			buf.WriteString("0\n")
+			longbuf.WriteString("0\n")
 			clauses++
 			// each combination of two values
 			// each row
@@ -154,8 +156,7 @@ func (b *board) getSAT() string {
 				// each column
 				for c := cOffset + 1; c <= cOffset+3; c++ {
 					cur := getRCV(r, c, v)
-					// TODO: we really just need to check the diagnals
-					// and add 4 additional clauses per box
+					// TODO: being lazy with the map to detect dupes
 					for r2 := rOffset + 1; r2 <= rOffset+3; r2++ {
 						for c2 := cOffset + 1; c2 <= cOffset+3; c2++ {
 							// already checked row/col constraint
@@ -199,6 +200,6 @@ func (b *board) getSAT() string {
 
 	header := fmt.Sprintf("p cnf %d %d", 9*9*9, clauses)
 	//fmt.Printf("%s\n", header)
-	input := fmt.Sprintf("%s\n%s", header, buf)
+	input := fmt.Sprintf("%s\n%s%s%s", header, singlebuf, longbuf, buf)
 	return input
 }
