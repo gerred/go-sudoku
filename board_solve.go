@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/judwhite/go-sudoku/internal/bits"
 )
@@ -69,10 +68,10 @@ func (b *board) getSolvers() []solver {
 		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
 		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
 		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
-		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)}, // NOTE: not seen in any tests yet
+		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)},
 		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
 		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
-		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)}, // NOTE: not seen in any tests yet
+		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)},
 		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
 		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
 		{name: "BOX LINE", run: b.SolveBoxLine},
@@ -81,7 +80,6 @@ func (b *board) getSolvers() []solver {
 		{name: "SWORDFISH", run: b.SolveSwordFish},
 
 		{name: "XY-CHAIN", run: b.SolveXYChain},
-		//{name: "X-CYCLES", run: b.SolveXCycles},
 	}
 
 	return solvers
@@ -144,9 +142,9 @@ mainLoop:
 
 		if !b.isSolved() {
 			//b.Log(false, -1, "Starting SAT solver...")
-			start := time.Now()
+			//start := time.Now()
 			err := b.SolveSAT()
-			fmt.Printf("sat time: %v\n", time.Since(start))
+			//fmt.Printf("sat time: %v\n", time.Since(start))
 			if err != nil {
 				return err
 			}
@@ -165,7 +163,7 @@ mainLoop:
 		break
 	}
 
-	fmt.Println("--- END SOLVER")
+	//fmt.Println("--- END SOLVER")
 
 	return nil
 }

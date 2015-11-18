@@ -122,7 +122,7 @@ func TestUnitPropogation(t *testing.T) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = nil
+	expected = notFound
 	actual = up(&clause, 12, true)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
@@ -139,7 +139,7 @@ func TestUnitPropogation(t *testing.T) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = nil
+	expected = notFound
 	//fmt.Printf("clause before3: %v\n", clause)
 	actual = up(&clause, 1, false)
 	if !reflect.DeepEqual(expected, actual) {

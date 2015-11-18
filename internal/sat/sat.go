@@ -11,6 +11,7 @@ import (
 
 const lenMask = 0xF800000000000000
 const len1 = 0x800000000000000
+const len2 = 0x1000000000000000
 
 var notFound *[2]uint64 = &[2]uint64{}
 
@@ -167,14 +168,17 @@ func getIntArray(values []string, sortValues bool, trimEnd bool) ([]int, error) 
 	return list, nil
 }
 
-func abs(v int) int {
-	if v >= 0 {
-		return v
+func abs(x int) int {
+	switch {
+	case x < 0:
+		return -x
+	case x == 0:
+		return 0 // return correctly abs(-0)
 	}
-	return v * -1
+	return x
 }
 
-func (s *sat) Solve() *sat {
+func (s *sat) getNextVar() (*uint64, *bool) {
 	// find a clause with a single variable
 	for _, clause := range s.Clauses {
 		length := clause[0] & lenMask
@@ -183,20 +187,66 @@ func (s *sat) Solve() *sat {
 			on := (val&0x400 == 0)
 			val = val & 0x3FF
 
-			return set(s, val, on)
+			// TODO: is this necessary?
+			found := false
+			for _, x := range s.vars {
+				if x == val {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return nil, nil
+			}
+
+			return &val, &on
+		}
+	}
+
+	for _, clause := range s.Clauses {
+		length := clause[0] & lenMask
+		if length == len2 {
+			val := clause[0] >> 44
+			on := (val&0x400 == 0)
+			if on {
+				continue
+			}
+			val = val & 0x3FF
+
+			// TODO: is this necessary?
+			found := false
+			for _, x := range s.vars {
+				if x == val {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return nil, nil
+			}
+
+			return &val, nil
 		}
 	}
 
 	// let's try the first variable
-	s2 := set(s, s.vars[0], true)
-	if s2 != nil {
-		return s2
+	return &s.vars[0], nil
+}
+
+func (s *sat) Solve() *sat {
+	val, on := s.getNextVar()
+	var s2 *sat
+	if on != nil {
+		s2 = set(s, *val, *on)
+	} else {
+		s2 = set(s, *val, true)
+		if s2 == nil {
+			s2 = set(s, *val, false)
+		}
 	}
-	s2 = set(s, s.vars[0], false)
-	if s2 != nil {
-		return s2
-	}
-	return nil
+	return s2
 }
 
 func set(s1 *sat, v uint64, isOn bool) *sat {
@@ -223,44 +273,25 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 		return s2
 	}
 
-	// find a clause with a single variable
-	for _, clause := range s2.Clauses {
-		length := clause[0] & lenMask
-		if length == len1 {
-			val := clause[0] >> 44
-			on := (val&0x400 == 0)
-			val = val & 0x3FF
+	val, on := s2.getNextVar()
 
-			found := false
-			for _, x := range s2.vars {
-				if x == val {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				return nil
-			}
-
-			s3 := set(s2, val, on)
-			if s3 == nil {
-				return nil
-			}
-			s3.SetVars = append(s3.SetVars, SetVar{VarNum: val, Value: on})
+	if on != nil {
+		s3 := set(s2, *val, *on)
+		if s3 != nil {
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: *on})
 			return s3
 		}
-	}
-
-	s3 := set(s2, s2.vars[0], true)
-	if s3 != nil {
-		s3.SetVars = append(s3.SetVars, SetVar{VarNum: s2.vars[0], Value: true})
-		return s3
-	}
-	s3 = set(s2, s2.vars[0], false)
-	if s3 != nil {
-		s3.SetVars = append(s3.SetVars, SetVar{VarNum: s2.vars[0], Value: false})
-		return s3
+	} else {
+		s3 := set(s2, *val, true)
+		if s3 != nil {
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: true})
+			return s3
+		}
+		s3 = set(s2, *val, false)
+		if s3 != nil {
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: false})
+			return s3
+		}
 	}
 
 	return nil
@@ -340,7 +371,6 @@ func indexOfValue(clause *[2]uint64, val uint64) int {
 	}
 
 	shift := uint(44)
-	j := 0
 	cur := clause[0]
 	for i := 0; i < length; i++ {
 		curval := (cur >> shift) & 0x7FF
@@ -350,8 +380,7 @@ func indexOfValue(clause *[2]uint64, val uint64) int {
 
 		if shift == 0 {
 			shift = 44
-			j++
-			cur = clause[j]
+			cur = clause[1]
 		} else {
 			shift -= 11
 		}
