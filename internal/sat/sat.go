@@ -278,18 +278,18 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 	if on != nil {
 		s3 := set(s2, *val, *on)
 		if s3 != nil {
-			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: *on})
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: v, Value: isOn})
 			return s3
 		}
 	} else {
 		s3 := set(s2, *val, true)
 		if s3 != nil {
-			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: true})
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: v, Value: isOn})
 			return s3
 		}
 		s3 = set(s2, *val, false)
 		if s3 != nil {
-			s3.SetVars = append(s3.SetVars, SetVar{VarNum: *val, Value: false})
+			s3.SetVars = append(s3.SetVars, SetVar{VarNum: v, Value: isOn})
 			return s3
 		}
 	}
