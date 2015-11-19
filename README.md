@@ -11,6 +11,7 @@ Resources:
 - https://en.wikipedia.org/wiki/Unit_propagation
 - http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-005-elements-of-software-construction-fall-2011/lecture-notes/
 - [Puzzle Generation](http://zhangroup.aporc.org/images/files/Paper_3485.pdf)
+- http://www.sudokuwiki.org/sudoku_creation_and_grading.pdf
 
 http://www.websudoku.com/faqs.php
 http://planetsudoku.com/how-to/sudoku-squirmbag.html
