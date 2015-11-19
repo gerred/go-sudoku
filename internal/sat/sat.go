@@ -21,7 +21,7 @@ type SetVar struct {
 }
 
 type sat struct {
-	vars    []uint64
+	//vars    []uint64
 	SetVars []SetVar
 	Clauses [][2]uint64
 }
@@ -90,7 +90,7 @@ func NewSAT(input string) (*sat, error) {
 		}
 		s.Clauses[i] = intArrayToBin(parts)
 
-		for j := 0; j < len(parts); j++ {
+		/*for j := 0; j < len(parts); j++ {
 			v := uint64(abs(parts[j]))
 			found := false
 			for _, x := range s.vars {
@@ -102,7 +102,7 @@ func NewSAT(input string) (*sat, error) {
 			if !found {
 				s.vars = append(s.vars, v)
 			}
-		}
+		}*/
 		if lastLine == true {
 			break
 		}
@@ -178,17 +178,58 @@ func abs(x int) int {
 	return x
 }
 
+func (s *sat) getRemainingVars() []int {
+	vars := make(map[int]interface{})
+
+	for _, clause := range s.Clauses {
+		length := int(clause[0]&lenMask) >> 59
+		if length == 0 {
+			continue
+		}
+		shift := uint(44)
+		cur := clause[0]
+		for i := 0; i < length; i++ {
+			curval := (cur >> shift) & 0x7FF
+			neg := (curval & 0x400) == 0x400
+			curval &= 0x3FF
+
+			var val int
+			val = int(curval)
+			if neg {
+				val = -val
+			}
+			vars[val] = struct{}{}
+
+			if shift == 0 {
+				shift = 44
+				cur = clause[1]
+			} else {
+				shift -= 11
+			}
+		}
+	}
+
+	var list []int
+	for k, _ := range vars {
+		list = append(list, k)
+	}
+	sort.Ints(list)
+	return list
+}
+
 func (s *sat) getNextVar() (*uint64, *bool) {
+	var val uint64
+
 	// find a clause with a single variable
 	for _, clause := range s.Clauses {
 		length := clause[0] & lenMask
 		if length == len1 {
-			val := clause[0] >> 44
+			val = clause[0] >> 44
 			on := (val&0x400 == 0)
 			val = val & 0x3FF
 
 			// TODO: is this necessary?
-			found := false
+			/*found := false
 			for _, x := range s.vars {
 				if x == val {
 					found = true
@@ -198,7 +239,7 @@ func (s *sat) getNextVar() (*uint64, *bool) {
 
 			if !found {
 				return nil, nil
-			}
+			}*/
 
 			return &val, &on
 		}
@@ -207,15 +248,18 @@ func (s *sat) getNextVar() (*uint64, *bool) {
 	for _, clause := range s.Clauses {
 		length := clause[0] & lenMask
 		if length == len2 {
-			val := clause[0] >> 44
-			on := (val&0x400 == 0)
-			if on {
+			val = clause[0] >> 44
+			/*on := (val&0x400 == 0)
+			if !on {
+				if val == 0 {
+					val = val & 0x3FF
+				}
 				continue
-			}
+			}*/
 			val = val & 0x3FF
 
 			// TODO: is this necessary?
-			found := false
+			/*found := false
 			for _, x := range s.vars {
 				if x == val {
 					found = true
@@ -225,18 +269,25 @@ func (s *sat) getNextVar() (*uint64, *bool) {
 
 			if !found {
 				return nil, nil
-			}
+			}*/
 
 			return &val, nil
 		}
 	}
 
-	// let's try the first variable
-	return &s.vars[0], nil
+	if val != 0 {
+		fmt.Printf("ha!\n")
+		return &val, nil
+	}
+
+	// let's try the first variable from the first clause
+	val = (s.Clauses[0][0] >> 44) & 0x3FF
+	return &val, nil
 }
 
 func (s *sat) Solve() *sat {
 	val, on := s.getNextVar()
+	//fmt.Printf("vars: %d\n", len(s.getRemainingVars()))
 	var s2 *sat
 	if on != nil {
 		s2 = set(s, *val, *on)
@@ -251,11 +302,11 @@ func (s *sat) Solve() *sat {
 
 func set(s1 *sat, v uint64, isOn bool) *sat {
 	s2 := &sat{}
-	for _, k := range s1.vars {
+	/*for _, k := range s1.vars {
 		if k != v {
 			s2.vars = append(s2.vars, k)
 		}
-	}
+	}*/
 
 	for _, clause := range s1.Clauses {
 		newClause := up(&clause, v, isOn)
@@ -268,12 +319,40 @@ func set(s1 *sat, v uint64, isOn bool) *sat {
 		}
 	}
 
-	if len(s2.vars) == 0 {
+	if len(s2.Clauses) == 0 {
 		s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
 		return s2
 	}
 
 	val, on := s2.getNextVar()
+	//fmt.Printf("%d\n", len(s2.getRemainingVars()))
+
+	/*for on != nil {
+		var newClauses [][2]uint64
+		for _, clause := range s2.Clauses {
+			newClause := up(&clause, *val, *on)
+			if newClause != nil {
+				if newClause != notFound {
+					newClauses = append(newClauses, *newClause)
+				}
+			} else {
+				return nil
+			}
+		}
+		s2.SetVars = append(s2.SetVars, SetVar{VarNum: *val, Value: *on})
+		s2.Clauses = newClauses
+		if *val == 283 {
+			fmt.Printf("hi %t\n", *on)
+		}
+		if len(s2.Clauses) == 0 {
+			s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
+			return s2
+		}
+
+		val, on = s2.getNextVar()
+	}*/
+
+	//fmt.Printf("escaped!\n")
 
 	if on != nil {
 		s3 := set(s2, *val, *on)
