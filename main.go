@@ -7,15 +7,57 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"runtime/pprof"
 	"strings"
 	"time"
 
+	"github.com/judwhite/go-sudoku/internal/bits"
 	"github.com/judwhite/go-sudoku/internal/sat"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func main() {
+
+	/*puzzles := bytes.Buffer{}
+
+	for i := 174; i > 0; i-- {
+		fmt.Printf("%d\n", i)
+		resp, err := http.DefaultClient.Get("http://www.sudokuwiki.org/feed/scanraid/ASSudokuWeekly.asp?wp=" + strconv.Itoa(i))
+		if err != nil {
+			log.Fatal(err)
+		}
+		r := bufio.NewReader(resp.Body)
+		find := "load_from_script(false,'e"
+		for {
+			line, err := r.ReadString('\n')
+			if line == "" || err != nil {
+				break
+			}
+			idx := strings.Index(line, find)
+			if idx != -1 {
+				line = line[idx+len(find) : len(line)-7]
+				_, err = puzzles.WriteString(line + "\n")
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				break
+			}
+		}
+	}
+
+	err := ioutil.WriteFile("weekly_unsolvable.txt", puzzles.Bytes(), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return*/
+
 	flags := flag.FlagSet{}
 	profile := flags.Bool("profile", false, "true profile cpu/mem")
 	max_iterations := flags.Int("run", -1, "max iterations")
@@ -39,27 +81,166 @@ func main() {
 		startProfile()
 	}
 
-	//printCompactToStandard("210300000000060050000000000300000702004050000000000100000102080036000000000700000")
+	//printCompactToStandard("080009743050008010010000000800005000000804000000300006000000070030500080972400050")
 
 	//runFile("./test_files/12_tough_20151107_173.txt")
-
+	// 8 SLNS: 080009743050008010010000000800005000000804000000300006000000070030500080972400050
 	// UNSAT: 020400006400089000000007004001008060000700008030060500060000010005000300910800007
 	// SAT: 020400000400089000000007004001008060000700008030060500060000010005000300910800007
-	b, _ := loadBoard([]byte("123456789456000000789000000000000000000000000000000000000000000000000000000000000"))
-	b.Solve()
-	b.Print()
+	/*b, _ := loadBoard([]byte(`080009743050008010010000000800005000000804000000300006000000070030500080972400050`))
+	b.PrintURL()
+	err := b.Solve()
+	if err != nil {
+		log.Fatal(err)
+	}
+	b.Print()*/
 
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
+	//runFile("./test_files/input.txt")
 	//runFile("./test_files/input_no_solution.txt")
 	//runList("./test_files/top95.txt", *max_iterations)
-	//runList("./test_files/sudoku17.txt", *max_iterations)
+	//runList("./test_files/weekly_unsolvable.txt", *max_iterations)
+	//runList("./test_files/sudokus.txt", *max_iterations)
+
+	generate()
 
 	if *profile {
 		stopProfile()
 	}
 	fmt.Printf("%v\n", time.Since(start))
+}
+
+func getValidBoard() (*board, error) {
+	b, err := loadBoard([]byte("000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
+	if err != nil {
+		return nil, err
+	}
+	/*for i := 0; i < 8; i++ {
+		err := b.SolvePosition(i, uint(i+1))
+		if err != nil {
+			return nil, err
+		}
+	}*/
+	for !b.isSolved() {
+		n := rand.Intn(81)
+		if b.solved[n] != 0 {
+			continue
+		}
+		bitList := bits.GetBitList(b.blits[n])
+		bn := rand.Intn(len(bitList))
+		val := bits.GetSingleBitValue(bitList[bn])
+
+		err = b.SolvePosition(n, val)
+		if err != nil {
+			return nil, err
+		}
+
+		err = b.Solve()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b, nil
+}
+
+func generate() {
+	var err error
+	var b *board
+	for b == nil || err != nil {
+		b, err = getValidBoard()
+	}
+
+	//b.PrintHints()
+
+	digHoles(b)
+
+	/*b.CountSolutions = true
+
+	err = b.SolveSAT()
+	b.Print()
+	if err != nil {
+		log.Fatal(err)
+	}*/
+}
+
+func digHoles(b *board) error {
+	var err error
+	var b2 *board
+restartLoop:
+	for {
+		b2, err = loadBoard([]byte("000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
+		if err != nil {
+			return err
+		}
+
+		j := 1
+		for b.numSolved() != 9 {
+			n := rand.Intn(81)
+			fmt.Printf("%d\n", b.solved[n])
+			if b2.solved[n] != 0 || b.solved[n] != uint(j) {
+				continue
+			}
+			j++
+			err = b2.SolvePosition(n, b.solved[n])
+			b.changed = false
+			/*for b.changed {
+				b.changed = true
+				b2.SolveNakedSingle()
+				b2.SolveHiddenSingle()
+			}*/
+			if err != nil {
+				return err
+			}
+		}
+		//b2.Print()
+
+		for {
+			b2.Print()
+			if b2.numSolved() > 25 {
+				fmt.Printf("restartd, %d solved..\n", b2.numSolved())
+				continue restartLoop
+			}
+
+			b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true}
+			err = b3.Solve()
+			if err == nil && b3.isSolved() && b.SolutionCount == 1 {
+				break restartLoop
+			}
+
+			for {
+				n := rand.Intn(81)
+				if b2.solved[n] != 0 {
+					continue
+				}
+				err = b2.SolvePosition(n, b.solved[n])
+				if err != nil {
+					return err
+				}
+				/*b.changed = false
+				for b.changed {
+					b.changed = true
+					b2.SolveNakedSingle()
+					b2.SolveHiddenSingle()
+				}*/
+
+				break
+			}
+		}
+	}
+
+	b3 := &board{solved: b2.solved, blits: b2.blits, SkipSAT: true}
+	b3.Print()
+	b3.PrintURL()
+	fmt.Printf("num solved: %d\n", b3.numSolved())
+	err = b3.Solve()
+	if err != nil {
+		log.Fatal(err)
+	}
+	b3.Print()
+
+	return nil
 }
 
 func startProfile() {
@@ -127,17 +308,23 @@ func readStats(fileName string) error {
 
 func (b *board) SolveSAT() error {
 	satInput := b.getSAT()
-	satSolver, err := sat.NewSAT(satInput)
+	satSolver, err := sat.NewSAT(satInput, b.CountSolutions)
 	if err != nil {
 		return err
 	}
-	satSolver = satSolver.Solve()
-	if satSolver == nil {
-		return fmt.Errorf("could not solve with SAT\n")
+	slns := satSolver.Solve()
+	if slns == nil || len(slns) == 0 {
+		return fmt.Errorf("could not solve with SAT %v\n", slns)
 	} else {
-		fmt.Printf("solved with SAT\n")
+		if !b.CountSolutions {
+			fmt.Printf("solved with SAT\n")
+		} else {
+			b.SolutionCount = len(slns)
+			fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
+		}
 
-		for _, setvar := range satSolver.SetVars {
+		sln1 := slns[0]
+		for _, setvar := range sln1.SetVars {
 			k := int(setvar.VarNum)
 			v := setvar.Value
 			if v {
@@ -152,12 +339,38 @@ func (b *board) SolveSAT() error {
 				}
 			}
 		}
+		//b.SolveNakedSingle()
 	}
+
+	/*if !b.isSolved() {
+		b.changed = true
+		for b.changed {
+			b.changed = false
+			b.SolveNakedSingle()
+			b.SolveHiddenSingle()
+		}
+	}*/
 
 	err = b.Validate()
 	if err != nil {
 		return err
 	}
+
+	/*var vars []int
+
+	for _, item := range satSolver.SetVars {
+		vars = append(vars, int(item.VarNum))
+	}
+
+	sort.Ints(vars)
+
+	for _, v := range vars {
+		for _, item := range satSolver.SetVars {
+			if v == int(item.VarNum) {
+				fmt.Printf("%d %t\n", item.VarNum, item.Value)
+			}
+		}
+	}*/
 
 	return nil
 }

@@ -140,7 +140,7 @@ mainLoop:
 			}
 		}
 
-		if !b.isSolved() {
+		if !b.isSolved() && !b.SkipSAT {
 			//b.Log(false, -1, "Starting SAT solver...")
 			//start := time.Now()
 			err := b.SolveSAT()

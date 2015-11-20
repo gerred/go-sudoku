@@ -40,18 +40,20 @@ func testInput(t *testing.T, input string) {
 	if len(input) < 1000 {
 		fmt.Println(input)
 	}
-	sat, err := NewSAT(input)
+	sat, err := NewSAT(input, false)
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
 	fmt.Printf("clauses:  %#v\n", sat.Clauses)
 	sln := sat.Solve()
-	if sln == nil {
+	if sln == nil || len(sln) == 0 {
 		fmt.Printf("no solution\n")
 	} else {
-		fmt.Printf("set vars: %v\n", sln.SetVars)
-		fmt.Printf("clauses:  %#v\n", sln.Clauses)
+		for _, item := range sln {
+			fmt.Printf("set vars: %v\n", item.SetVars)
+			fmt.Printf("clauses:  %#v\n", item.Clauses)
+		}
 	}
 }
 
@@ -122,7 +124,7 @@ func TestUnitPropogation(t *testing.T) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = notFound
+	expected = satisfied
 	actual = up(&clause, 12, true)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
@@ -139,7 +141,7 @@ func TestUnitPropogation(t *testing.T) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = notFound
+	expected = satisfied
 	//fmt.Printf("clause before3: %v\n", clause)
 	actual = up(&clause, 1, false)
 	if !reflect.DeepEqual(expected, actual) {

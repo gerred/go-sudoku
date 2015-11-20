@@ -185,7 +185,7 @@ func (b *board) getSAT() string {
 	for r := 1; r <= 9; r++ {
 		// each column
 		for c := 1; c <= 9; c++ {
-			// each value {
+			// each pair of values (single value per cell)
 			for v1 := 1; v1 <= 9; v1++ {
 				cur := getRCV(r, c, v1)
 				for v2 := v1 + 1; v2 <= 9; v2++ {
@@ -201,5 +201,6 @@ func (b *board) getSAT() string {
 	header := fmt.Sprintf("p cnf %d %d", 9*9*9, clauses)
 	//fmt.Printf("%s\n", header)
 	input := fmt.Sprintf("%s\n%s%s%s", header, singlebuf, longbuf, buf)
+	//ioutil.WriteFile("sat.cnf", []byte(input), 0644)
 	return input
 }

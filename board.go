@@ -6,13 +6,15 @@ import (
 )
 
 type board struct {
-	solved      [81]uint
-	blits       [81]uint
-	loading     bool
-	bfDepth     int
-	changed     bool
-	verbose     bool
-	knownAnswer *[81]byte
+	solved         [81]uint
+	blits          [81]uint
+	loading        bool
+	changed        bool
+	verbose        bool
+	knownAnswer    *[81]byte
+	CountSolutions bool
+	SkipSAT        bool
+	SolutionCount  int
 }
 
 type coords struct {
@@ -133,7 +135,7 @@ func loadBoard(b []byte) (*board, error) {
 	}
 
 	for i := 0; i < 81; i++ {
-		if b[i] != '_' && b[i] != '0' {
+		if b[i] != '_' && b[i] != '0' && b[i] != '.' {
 			val := uint(b[i] - 48)
 			if err := board.SolvePosition(i, val); err != nil {
 				return board, err
