@@ -40,7 +40,7 @@ func testInput(t *testing.T, input string) {
 	if len(input) < 1000 {
 		fmt.Println(input)
 	}
-	sat, err := NewSAT(input, false)
+	sat, err := NewSAT(input, false, 0)
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)

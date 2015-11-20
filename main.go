@@ -84,10 +84,11 @@ func main() {
 	//printCompactToStandard("080009743050008010010000000800005000000804000000300006000000070030500080972400050")
 
 	//runFile("./test_files/12_tough_20151107_173.txt")
+	// 000000000000000000000000000000000000000000000000000000000000000000000000000000000
 	// 8 SLNS: 080009743050008010010000000800005000000804000000300006000000070030500080972400050
 	// UNSAT: 020400006400089000000007004001008060000700008030060500060000010005000300910800007
 	// SAT: 020400000400089000000007004001008060000700008030060500060000010005000300910800007
-	/*b, _ := loadBoard([]byte(`080009743050008010010000000800005000000804000000300006000000070030500080972400050`))
+	/*b, _ := loadBoard([]byte(`097003420604020000300700000080407000503002006010086040400005008000170000000040270`))
 	b.PrintURL()
 	err := b.Solve()
 	if err != nil {
@@ -175,57 +176,137 @@ restartLoop:
 			return err
 		}
 
+		// solve digits 1-9, minimum guarantee for a unique solution
 		j := 1
-		for b.numSolved() != 9 {
+		for b2.numSolved() != 9 {
 			n := rand.Intn(81)
-			fmt.Printf("%d\n", b.solved[n])
 			if b2.solved[n] != 0 || b.solved[n] != uint(j) {
 				continue
 			}
 			j++
 			err = b2.SolvePosition(n, b.solved[n])
-			b.changed = false
-			/*for b.changed {
-				b.changed = true
-				b2.SolveNakedSingle()
-				b2.SolveHiddenSingle()
-			}*/
 			if err != nil {
 				return err
 			}
 		}
-		//b2.Print()
 
+		// solve to 17 cells
+		for b2.numSolved() < 17 {
+			b2.Print()
+			fmt.Printf("num solved: %d\n", b2.numSolved())
+			check := make(map[int]interface{})
+			minslncount := -1
+			minslncount_n := -1
+			for {
+				if len(check) == 81 {
+					break
+				}
+
+				n := rand.Intn(81)
+				if _, ok := check[n]; ok {
+					continue
+				}
+				check[n] = struct{}{}
+
+				if b2.solved[n] != 0 {
+					continue
+				}
+
+				b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 100}
+
+				// see if the sln count has changed
+				err = b3.SolvePosition(n, b.solved[n])
+				if err != nil {
+					return err
+				}
+				if err = b3.SolveSAT(); err != nil {
+					return err
+				}
+
+				if minslncount == -1 || minslncount > b3.SolutionCount {
+					minslncount = b3.SolutionCount
+					minslncount_n = n
+				}
+			}
+
+			if minslncount == -1 {
+				continue restartLoop
+			}
+
+			// solve the cell in b2
+			if minslncount != 0 {
+				err = b2.SolvePosition(minslncount_n, b.solved[minslncount_n])
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// solve the rest needed for a unique solution
+		//var oldslncount int
 		for {
 			b2.Print()
-			if b2.numSolved() > 25 {
+			fmt.Printf("num solved: %d\n", b2.numSolved())
+			if b2.numSolved() > 30 {
 				fmt.Printf("restartd, %d solved..\n", b2.numSolved())
 				continue restartLoop
 			}
 
-			b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true}
+			b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 500}
 			err = b3.Solve()
-			if err == nil && b3.isSolved() && b.SolutionCount == 1 {
+			if err != nil {
+				continue restartLoop
+			}
+
+			//oldslncount = b3.SolutionCount
+
+			if err == nil && b3.isSolved() && b3.SolutionCount <= 1 {
 				break restartLoop
 			}
 
+			check := make(map[int]interface{})
+			minslncount := -1
+			minslncount_n := -1
 			for {
+				if len(check) == 81 {
+					break
+				}
+
 				n := rand.Intn(81)
+				if _, ok := check[n]; ok {
+					continue
+				}
+				check[n] = struct{}{}
+
 				if b2.solved[n] != 0 {
 					continue
 				}
-				err = b2.SolvePosition(n, b.solved[n])
+
+				b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 500}
+
+				// see if the sln count has changed
+				err = b3.SolvePosition(n, b.solved[n])
 				if err != nil {
 					return err
 				}
-				/*b.changed = false
-				for b.changed {
-					b.changed = true
-					b2.SolveNakedSingle()
-					b2.SolveHiddenSingle()
-				}*/
+				if err = b3.SolveSAT(); err != nil {
+					return err
+				}
 
-				break
+				if minslncount == -1 || minslncount > b3.SolutionCount {
+					minslncount = b3.SolutionCount
+					minslncount_n = n
+				}
+			}
+
+			if minslncount == -1 {
+				continue restartLoop
+			}
+
+			// solve the cell in b2
+			err = b2.SolvePosition(minslncount_n, b.solved[minslncount_n])
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -308,7 +389,7 @@ func readStats(fileName string) error {
 
 func (b *board) SolveSAT() error {
 	satInput := b.getSAT()
-	satSolver, err := sat.NewSAT(satInput, b.CountSolutions)
+	satSolver, err := sat.NewSAT(satInput, b.CountSolutions, b.MaxSolutions)
 	if err != nil {
 		return err
 	}

@@ -12,9 +12,10 @@ type board struct {
 	changed        bool
 	verbose        bool
 	knownAnswer    *[81]byte
-	CountSolutions bool
 	SkipSAT        bool
+	CountSolutions bool
 	SolutionCount  int
+	MaxSolutions   int
 }
 
 type coords struct {

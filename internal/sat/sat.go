@@ -24,9 +24,10 @@ type sat struct {
 	SetVars               []SetVar
 	Clauses               [][2]uint64
 	FindMultipleSolutions bool
+	MaxSolutions          int
 }
 
-func NewSAT(input string, findMultipleSolutions bool) (*sat, error) {
+func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*sat, error) {
 	// load CNF input
 
 	sr := strings.NewReader(input)
@@ -66,6 +67,7 @@ func NewSAT(input string, findMultipleSolutions bool) (*sat, error) {
 	s := &sat{
 		Clauses:               make([][2]uint64, clauseCount),
 		FindMultipleSolutions: findMultipleSolutions,
+		MaxSolutions:          maxSolutions,
 	}
 
 	// get clauses
@@ -373,7 +375,7 @@ func (s2 *sat) solveSingleVarClauses2() (*sat, []SetVar) {
 }
 
 func set(s1 *sat, v uint64, isOn bool) []*sat {
-	s2 := &sat{FindMultipleSolutions: s1.FindMultipleSolutions}
+	s2 := &sat{FindMultipleSolutions: s1.FindMultipleSolutions, MaxSolutions: s1.MaxSolutions}
 
 	for _, clause := range s1.Clauses {
 		newClause := up(&clause, v, isOn)
@@ -407,22 +409,30 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 
 	val, on := s2.getNextVar()
 
-	var s3, s4 []*sat
-	if on != nil {
-		s3 = set(s2, *val, *on)
-	} else {
-		s3 = set(s2, *val, false)
-		if s3 == nil || s2.FindMultipleSolutions {
-			s4 = set(s2, *val, true)
-		}
-	}
-
 	var final []*sat
-	if s3 != nil {
-		final = append(final, s3...)
-	}
-	if s4 != nil {
-		final = append(final, s4...)
+	if on != nil {
+		s3 := set(s2, *val, *on)
+		if s3 != nil {
+			final = append(final, s3...)
+		}
+	} else {
+		s3 := set(s2, *val, false)
+		if s3 != nil {
+			//fmt.Printf("%d %t, %d %d\n", val, isOn, len(final), len(s3))
+			final = append(final, s3...)
+		}
+
+		if s2.FindMultipleSolutions && len(final) >= s2.MaxSolutions {
+			// skip
+		} else {
+			if s3 == nil || s2.FindMultipleSolutions {
+				s4 := set(s2, *val, true)
+				if s4 != nil {
+					//fmt.Printf("%d %t, %d %d\n", val, isOn, len(final), len(s4))
+					final = append(final, s4...)
+				}
+			}
+		}
 	}
 
 	if len(final) == 0 {
