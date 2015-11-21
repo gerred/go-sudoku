@@ -1,4 +1,4 @@
-package bits
+package main
 
 import (
 	"strconv"
@@ -31,7 +31,7 @@ func GetSingleBitValue(val uint) uint {
 	return m
 }
 
-func GetString(val uint) string {
+func GetBitsString(val uint) string {
 	var msg string
 	for m := 1; m <= 9; m++ {
 		if val&0x01 == 1 {

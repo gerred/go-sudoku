@@ -1,7 +1,5 @@
 package main
 
-import "github.com/judwhite/go-sudoku/internal/bits"
-
 func (b *board) SolveBoxLine() error {
 	// Two cells in a BOX that share a hint which isn't anywhere else on
 	// the ROW or COLUMN they share can be removed as hints from other cells
@@ -64,7 +62,7 @@ func (b *board) SolveBoxLine() error {
 			for _, list := range perms {
 				for _, item := range list {
 					sharedHints := blit & b.blits[item]
-					hintList := bits.GetBitList(sharedHints)
+					hintList := GetBitList(sharedHints)
 
 					for _, hint := range hintList {
 						safeToRemove := true

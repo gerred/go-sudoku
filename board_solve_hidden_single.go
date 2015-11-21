@@ -1,7 +1,5 @@
 package main
 
-import "github.com/judwhite/go-sudoku/internal/bits"
-
 func (b *board) SolveHiddenSingle() error {
 	// Hidden Single - a given cell contains a candidate which is only
 	// present in this cell and not in the rest of the row/column/box
@@ -34,8 +32,8 @@ func (b *board) SolveHiddenSingle() error {
 			}
 			leftOver := blit & ^sumBlits
 
-			if bits.HasSingleBit(leftOver) {
-				val := bits.GetSingleBitValue(leftOver)
+			if HasSingleBit(leftOver) {
+				val := GetSingleBitValue(leftOver)
 				//fmt.Printf("op-it:%d c:%#2v h:%09b sh:%09b ^sh:%09b lo:%b\n", opIt, getCoords(i), blit, sumBlits, ^sumBlits&0x1FF, leftOver)
 				if err := b.SolvePosition(i, val); err != nil {
 					return err

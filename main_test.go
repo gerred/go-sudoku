@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
 )
 
 func TestXYChain(t *testing.T) {
@@ -66,7 +64,7 @@ func testHint(t *testing.T, b *board, row, col int, hints []uint) {
 		expected |= 1 << (hint - 1)
 	}
 	if expected != actual {
-		t.Fatalf("R%dC%d, expected %v actual %v", row, col, hints, bits.GetString(actual))
+		t.Fatalf("R%dC%d, expected %v actual %v", row, col, hints, GetBitsString(actual))
 	}
 }
 

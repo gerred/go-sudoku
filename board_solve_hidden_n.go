@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) SolveHiddenN(n int) error {
 	if n < 2 || n > 5 {
@@ -63,7 +59,7 @@ func (b *board) checkHiddenPermutations(n int, source int, op containerOperator,
 		for _, pos := range list {
 			sumBits |= b.blits[pos]
 		}
-		if bits.GetNumberOfSetBits(sumBits) < uint(n) {
+		if GetNumberOfSetBits(sumBits) < uint(n) {
 			continue
 		}
 
@@ -91,7 +87,7 @@ func (b *board) checkHiddenPermutations(n int, source int, op containerOperator,
 
 		leftOver := (sumBits ^ sumOthers) & sumBits
 
-		if bits.GetNumberOfSetBits(leftOver) == uint(n) {
+		if GetNumberOfSetBits(leftOver) == uint(n) {
 			/*fmt.Printf("HIDDEN %d\n", n)
 			for _, pos := range list {
 				fmt.Printf("- %#2v %09b\n", getCoords(pos), b.blits[pos])

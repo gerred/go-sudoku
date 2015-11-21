@@ -1,7 +1,5 @@
 package main
 
-import "github.com/judwhite/go-sudoku/internal/bits"
-
 func (b *board) SolvePointingPairAndTripleReduction() error {
 	// http://planetsudoku.com/how-to/sudoku-pointing-pair-and-triple.html
 	// "I have two or three unique HINTS within a shared box, sharing the same
@@ -60,7 +58,7 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 					}
 
 					leftOver := sumBits & ^sumNegateBits
-					nbits := bits.GetNumberOfSetBits(leftOver)
+					nbits := GetNumberOfSetBits(leftOver)
 					//if nbits != 2 && nbits != 3 {
 					if nbits == 0 || nbits > 3 {
 						continue

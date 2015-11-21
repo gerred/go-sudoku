@@ -1,4 +1,4 @@
-package sat
+package main
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func testSolve(t *testing.T) {
+func TestSolve(t *testing.T) {
 	inputs := []string{
 		// (a ∨ ¬b) ∧ (a ∨ b) should return a: True, b: anything
 		`p cnf 2 2
@@ -150,5 +150,5 @@ func TestUnitPropogation(t *testing.T) {
 }
 
 func TestIntArrayToBin(t *testing.T) {
-
+	// TODO
 }

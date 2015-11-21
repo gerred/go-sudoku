@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) SolveNakedN(n int) error {
 	if n < 2 || n > 5 {
@@ -19,7 +15,7 @@ func (b *board) SolveNakedN(n int) error {
 		if b.solved[i] != 0 {
 			continue
 		}
-		if bits.GetNumberOfSetBits(b.blits[i]) > uint(n) {
+		if GetNumberOfSetBits(b.blits[i]) > uint(n) {
 			continue
 		}
 
@@ -54,7 +50,7 @@ func (b *board) SolveNakedN(n int) error {
 					blit |= b.blits[item]
 				}
 
-				if bits.GetNumberOfSetBits(blit) != uint(n) {
+				if GetNumberOfSetBits(blit) != uint(n) {
 					continue
 				}
 

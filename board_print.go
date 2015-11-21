@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) Print() {
 	fmt.Print("|-------|-------|-------|\n| ")
@@ -43,7 +39,7 @@ func (b *board) PrintHints() {
 	fmt.Printf("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n| 0 | ")
 	for i := 0; i < len(b.solved); i++ {
 		if b.solved[i] == 0 {
-			fmt.Printf("%15s ", fmt.Sprintf("(%s)", bits.GetString(b.blits[i])))
+			fmt.Printf("%15s ", fmt.Sprintf("(%s)", GetBitsString(b.blits[i])))
 		} else {
 			fmt.Printf("%15d ", b.solved[i])
 		}

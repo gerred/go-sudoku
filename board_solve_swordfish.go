@@ -1,11 +1,5 @@
 package main
 
-import (
-	"reflect"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
-
 type swordfishOperation struct {
 	blockType                    string
 	op                           containerOperator
@@ -139,7 +133,7 @@ func (b *board) SolveSwordFish() error {
 			// operate on all cells in container
 			// get list of candidate cells: map(hint, []pos)
 			extractHints := func(target int, source int) error {
-				bitList := bits.GetBitList(b.blits[target])
+				bitList := GetBitList(b.blits[target])
 				if len(bitList) < 2 {
 					return nil
 				}
@@ -258,11 +252,11 @@ func (b *board) SolveSwordFish() error {
 								// set. still confused? me too.
 								// http://www.sudokuwiki.org/Sword_Fish_Strategy
 
-								modified, err := b.swordfishApply(dim, hint, c, x, y)
+								err := b.swordfishApply(dim, hint, c, x, y)
 								if err != nil {
 									return err
 								}
-								if modified {
+								if b.changed {
 									// try simpler techniques before re-trying swordfish
 									//fmt.Println("**** we did it!")
 									return nil
@@ -383,15 +377,11 @@ func swordfishGetTwosAndThrees(v []int) [][]int {
 	return emptyList
 }
 
-func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set2 []int, set3 []int) (bool, error) {
+func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set2 []int, set3 []int) error {
 	var overlap []int
 	overlap = append(overlap, set1...)
 	overlap = append(overlap, set2...)
 	overlap = append(overlap, set3...)
-
-	//fmt.Printf("applying, hint: %d...\n", bits.GetSingleBitValue(hint))
-
-	begin := b.blits
 
 	dupeCheck := make(map[int]interface{})
 	for _, item := range overlap {
@@ -408,16 +398,14 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 					return nil
 				}
 			}
-			//fmt.Printf("- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))
 
 			return b.updateCandidates(target, source, ^hint)
 		}
 
-		//fmt.Printf("%#2v %s\n", getCoords(item), bits.GetString(b.blits[item]))
 		if err := sf.op_inverted(item, removeHint); err != nil {
-			return false, err
+			return err
 		}
 	}
 
-	return !reflect.DeepEqual(begin, b.blits), nil
+	return nil
 }

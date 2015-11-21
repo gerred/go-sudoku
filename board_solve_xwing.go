@@ -1,7 +1,5 @@
 package main
 
-import "github.com/judwhite/go-sudoku/internal/bits"
-
 func (b *board) SolveXWing() error {
 	// When there are
 	// - only two possible cells for a value in each of two different rows,
@@ -37,7 +35,7 @@ func (b *board) SolveXWing() error {
 			},
 		}
 
-		bitList := bits.GetBitList(blit)
+		bitList := GetBitList(blit)
 		for _, dim := range dims {
 			for _, bit := range bitList {
 				// find target cells with the same hint as the source cell,
@@ -124,7 +122,7 @@ func (b *board) SolveXWing() error {
 							/*if !logged && b.willUpdateCandidates(target, source, ^bit) {
 								logged = true
 								b.PrintHints()
-								fmt.Printf("xwing: val:%d\n", bits.GetSingleBitValue(bit))
+								fmt.Printf("xwing: val:%d\n", GetSingleBitValue(bit))
 								fmt.Printf("-- %#2v\n", c1)
 								fmt.Printf("-- %#2v\n", c2)
 								fmt.Printf("-- %#2v\n", c3)

@@ -12,9 +12,6 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-	"github.com/judwhite/go-sudoku/internal/sat"
 )
 
 func init() {
@@ -89,15 +86,21 @@ func main() {
 	// 8 SLNS: 080009743050008010010000000800005000000804000000300006000000070030500080972400050
 	// UNSAT: 020400006400089000000007004001008060000700008030060500060000010005000300910800007
 	// SAT: 020400000400089000000007004001008060000700008030060500060000010005000300910800007
-	b, _ := loadBoard([]byte(`074302000000005040000607900056000790300000005027000680005701000010200000000408160`))
-	b.CountSolutions = true
-	b.MaxSolutions = 500
+	/*b, _ := loadBoard([]byte(`052400000000070100000000000000802000300000600090500000106030000000000089700000000`))
+	//b.CountSolutions = true
+	//b.MaxSolutions = 500
 	b.PrintURL()
+	kb, _ := loadBoard([]byte("652481937834679152971325864467812593315794628298563471186937245523146789749258316"))
+	var ka [81]byte
+	for i, v := range kb.solved {
+		ka[i] = byte(v)
+	}
+	b.knownAnswer = &ka
 	err := b.Solve()
 	if err != nil {
 		log.Fatal(err)
 	}
-	b.Print()
+	b.Print()*/
 
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
@@ -105,7 +108,7 @@ func main() {
 	//runFile("./test_files/input.txt")
 	//runFile("./test_files/input_no_solution.txt")
 	//runList("./test_files/top95.txt", *max_iterations)
-	//runList("./test_files/weekly_unsolvable.txt", *max_iterations)
+	runList("./test_files/weekly_unsolvable.txt", *max_iterations)
 	//runList("./test_files/sudokus.txt", *max_iterations)
 
 	//generate()
@@ -114,200 +117,6 @@ func main() {
 		stopProfile()
 	}
 	fmt.Printf("%v\n", time.Since(start))
-}
-
-func getValidBoard() (*board, error) {
-	b, err := loadBoard([]byte("000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
-	if err != nil {
-		return nil, err
-	}
-	/*for i := 0; i < 8; i++ {
-		err := b.SolvePosition(i, uint(i+1))
-		if err != nil {
-			return nil, err
-		}
-	}*/
-	for !b.isSolved() {
-		n := rand.Intn(81)
-		if b.solved[n] != 0 {
-			continue
-		}
-		bitList := bits.GetBitList(b.blits[n])
-		bn := rand.Intn(len(bitList))
-		val := bits.GetSingleBitValue(bitList[bn])
-
-		err = b.SolvePosition(n, val)
-		if err != nil {
-			return nil, err
-		}
-
-		err = b.Solve()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return b, nil
-}
-
-func generate() {
-	var err error
-	var b *board
-	for b == nil || err != nil {
-		b, err = getValidBoard()
-	}
-
-	//b.PrintHints()
-
-	err = digHoles(b)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	/*b.CountSolutions = true
-
-	err = b.SolveSAT()
-	b.Print()
-	if err != nil {
-		log.Fatal(err)
-	}*/
-}
-
-func digHoles(b *board) error {
-	var err error
-	b2 := &board{solved: b.solved, blits: b.blits}
-	if err != nil {
-		return err
-	}
-
-	step := 1
-	failures := 0
-	check := make(map[int]interface{})
-	for len(check) != 81 {
-		goodSolved := b2.solved
-		goodBlits := b2.blits
-
-		pos1 := rand.Intn(81)
-		if step == 1 {
-			if _, ok := check[pos1]; ok {
-				continue
-			}
-			check[pos1] = struct{}{}
-		}
-		if b2.solved[pos1] == 0 {
-			continue
-		}
-
-		coords := getCoords(pos1)
-		secondRow := 8 - coords.row
-		if secondRow < 0 {
-			secondRow += 8
-		}
-		secondCol := 8 - coords.col
-		if secondCol < 0 {
-			secondCol += 8
-		}
-
-		if step == 4 {
-			pos2 := coords.row*9 + secondCol
-			pos3 := secondRow*9 + coords.col
-			pos4 := secondRow*9 + secondCol
-
-			if b2.solved[pos2] == 0 || b2.solved[pos3] == 0 || b2.solved[pos3] == 0 {
-				continue
-			}
-
-			b2.solved[pos1] = 0
-			b2.solved[pos2] = 0
-			b2.solved[pos3] = 0
-			b2.solved[pos4] = 0
-		} else if step == 2 {
-			pos2 := secondRow*9 + secondCol
-
-			if b2.solved[pos2] == 0 {
-				continue
-			}
-
-			b2.solved[pos1] = 0
-			b2.solved[pos2] = 0
-		} else {
-			b2.solved[pos1] = 0
-		}
-
-		for j := 0; j < 81; j++ {
-			if b2.solved[j] != 0 {
-				continue
-			}
-			b2.blits[j] = b2.getHints(j)
-		}
-
-		b3 := board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 2}
-		err = b3.Solve()
-		if err != nil {
-			return err
-		}
-
-		//fmt.Printf("sln count: %d\n", b3.SolutionCount)
-
-		if b3.SolutionCount > 1 {
-			//return fmt.Errorf("bad dig, more than 1 solution")
-			b2.solved = goodSolved
-			b2.blits = goodBlits
-			failures++
-			if step > 1 && failures == 5 {
-				failures = 0
-				step /= 2
-			}
-		} else {
-			//b2.PrintHints()
-		}
-	}
-
-	fmt.Printf("-----------------\n")
-	b2.Print()
-	b2.PrintURL()
-	fmt.Printf("hint count: %d\n", b2.numSolved())
-	b2.CountSolutions = true
-	b2.MaxSolutions = 2
-	b2.Solve()
-	fmt.Printf("sln count: %d\n", b2.SolutionCount)
-	//b2.PrintHints()
-	b2.Print()
-
-	return nil
-}
-
-func (b *board) getHints(pos int) uint {
-	check := make(map[uint]interface{})
-	for i := uint(1); i <= 9; i++ {
-		check[i] = struct{}{}
-	}
-
-	removeHints := func(target int, source int) error {
-		if target == source {
-			return nil
-		}
-		val := b.solved[target]
-		if val == 0 {
-			return nil
-		}
-
-		if _, ok := check[val]; ok {
-			delete(check, val)
-		}
-
-		return nil
-	}
-
-	if err := b.operateOnRCB(pos, removeHints); err != nil {
-		// TODO: return err
-		return 0
-	}
-
-	blits := uint(0)
-	for k := range check {
-		blits |= 1 << (k - 1)
-	}
-	return blits
 }
 
 func startProfile() {
@@ -375,7 +184,7 @@ func readStats(fileName string) error {
 
 func (b *board) SolveSAT() error {
 	satInput := b.getSAT()
-	satSolver, err := sat.NewSAT(satInput, b.CountSolutions, b.MaxSolutions)
+	satSolver, err := NewSAT(satInput, b.CountSolutions, b.MaxSolutions)
 	if err != nil {
 		return err
 	}
@@ -449,7 +258,7 @@ func runFile(fileName string) {
 		return
 	}
 
-	err = board.SolveSAT()
+	err = board.Solve()
 	if err != nil {
 		fmt.Printf("ERROR - %s\n", err)
 		return
@@ -472,7 +281,6 @@ func runFile(fileName string) {
 
 func runList(fileName string, max_iterations int) {
 	b, err := ioutil.ReadFile(fileName)
-	//b, err := ioutil.ReadFile("./test_files/sudoku17.txt")
 	if err != nil {
 		fmt.Printf("ERROR - %s\n", err)
 		return
@@ -484,6 +292,7 @@ func runList(fileName string, max_iterations int) {
 		fmt.Printf("----------------\nPuzzle # %d\n", i+1)
 		start1 := time.Now()
 		board, err := loadBoard([]byte(line))
+		board.PrintURL()
 		if err != nil {
 			board.PrintHints()
 			fmt.Printf("ERROR - %d - %s\n", i+1, err)
@@ -491,6 +300,11 @@ func runList(fileName string, max_iterations int) {
 		}
 
 		if err = board.Solve(); err != nil {
+			fmt.Printf("%s\n", line)
+			b2, err2 := loadBoard([]byte(line))
+			if err2 != nil {
+				b2.PrintURL()
+			}
 			fmt.Printf("ERROR - %s\n", err)
 			return
 		}

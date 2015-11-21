@@ -1,7 +1,5 @@
 package main
 
-import "github.com/judwhite/go-sudoku/internal/bits"
-
 func (b *board) SolveXYChain() error {
 	// http://www.sudokuwiki.org/XY_Chains
 	// bi-value cells linked together by one value (and visible to each other)
@@ -9,11 +7,11 @@ func (b *board) SolveXYChain() error {
 	// cells visible by both ends of the chain can have their shared value removed.
 	for i := 0; i < 81; i++ {
 		blit := b.blits[i]
-		if bits.GetNumberOfSetBits(blit) != 2 {
+		if GetNumberOfSetBits(blit) != 2 {
 			continue
 		}
 
-		bits := bits.GetBitList(blit)
+		bits := GetBitList(blit)
 		for _, bit := range bits {
 			updated, err := b.xyChainTestPosition(i, bit)
 			if err != nil {
@@ -56,13 +54,13 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 
 		/*var once1 sync.Once
 		print1 := func() {
-			fmt.Printf("-/- %#v hint:%d\n", list, bits.GetSingleBitValue(hint))
+			fmt.Printf("-/- %#v hint:%d\n", list, GetSingleBitValue(hint))
 			for idx, chainItem := range list {
-				fmt.Printf("--- chaind %d: %#2v %s\n", idx, getCoords(chainItem), bits.GetString(b.blits[chainItem]))
+				fmt.Printf("--- chaind %d: %#2v %s\n", idx, getCoords(chainItem), GetString(b.blits[chainItem]))
 			}
 			fmt.Printf("----- targets:\n")
 			for _, target := range targets {
-				fmt.Printf("----- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))
+				fmt.Printf("----- %#2v %s\n", getCoords(target), GetString(b.blits[target]))
 			}
 		}*/
 
@@ -114,7 +112,7 @@ loopVisible:
 		}
 		// ensure cell has 2 hints and is linked to the previous cell
 		itemBlit := b.blits[item]
-		if bits.GetNumberOfSetBits(itemBlit) != 2 || bits.GetNumberOfSetBits(curBlit&itemBlit) == 0 {
+		if GetNumberOfSetBits(itemBlit) != 2 || GetNumberOfSetBits(curBlit&itemBlit) == 0 {
 			continue
 		}
 		if curBlit&itemBlit == excludeBit {
@@ -128,12 +126,12 @@ loopVisible:
 	}
 
 	/*if len(chain) == 1 {
-		fmt.Printf("* %#2v %s\n", getCoords(curPos), bits.GetString(curBlit))
+		fmt.Printf("* %#2v %s\n", getCoords(curPos), GetString(curBlit))
 	}*/
 
 	//prefix := strings.Repeat("-", depth+1)
 	for _, item := range filtered {
-		//fmt.Printf("%s %#2v %s\n", prefix, getCoords(item), bits.GetString(b.blits[item]))
+		//fmt.Printf("%s %#2v %s\n", prefix, getCoords(item), GetString(b.blits[item]))
 		itemBlit := b.blits[item]
 
 		var newChain []int
@@ -146,9 +144,9 @@ loopVisible:
 			if itemBlit&^nextExcludeBit&firstBitInChain == firstBitInChain {
 				/*itemCoords := getCoords(item)
 				fmt.Printf("**** r,c:               %d,%d\n", itemCoords.row, itemCoords.col)
-				fmt.Printf("**** first bit:         %09b %d\n", firstBitInChain, bits.GetSingleBitValue(firstBitInChain))
+				fmt.Printf("**** first bit:         %09b %d\n", firstBitInChain, GetSingleBitValue(firstBitInChain))
 				fmt.Printf("**** item blit:         %09b\n", itemBlit)
-				fmt.Printf("**** next exclude bit:  %09b %d\n", nextExcludeBit, bits.GetSingleBitValue(nextExcludeBit))
+				fmt.Printf("**** next exclude bit:  %09b %d\n", nextExcludeBit, GetSingleBitValue(nextExcludeBit))
 				fmt.Printf("**** ^exclude bit:      %09b\n", ^nextExcludeBit&0x1FF)
 				fmt.Printf("**** itemBlit&^exclude: %09b\n", itemBlit&^nextExcludeBit)
 				fmt.Printf("**** test:              %09b\n", itemBlit&^nextExcludeBit&firstBitInChain)*/

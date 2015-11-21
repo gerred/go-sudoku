@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) Solve() error {
 	// first iteration naked single
@@ -215,7 +211,7 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 		b.blits[targetPos] = newBlit
 		if b.verbose {
 			delta := oldBlit & ^newBlit
-			b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", bits.GetString(oldBlit), bits.GetString(delta), bits.GetString(newBlit)))
+			b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", GetBitsString(oldBlit), GetBitsString(delta), GetBitsString(newBlit)))
 		}
 		return b.Validate()
 	}

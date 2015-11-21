@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/judwhite/go-sudoku/internal/bits"
-)
+import "fmt"
 
 func (b *board) SolveYWing() error {
 	// http://www.sudokuwiki.org/Y_Wing_Strategy
@@ -24,7 +20,7 @@ func (b *board) SolveYWing() error {
 		}
 
 		blit := b.blits[i]
-		if bits.GetNumberOfSetBits(blit) != 2 {
+		if GetNumberOfSetBits(blit) != 2 {
 			continue
 		}
 
@@ -35,10 +31,10 @@ func (b *board) SolveYWing() error {
 		var candidates []int
 		for _, item := range visibleToHinge {
 			itemBlit := b.blits[item]
-			if bits.GetNumberOfSetBits(itemBlit) != 2 {
+			if GetNumberOfSetBits(itemBlit) != 2 {
 				continue
 			}
-			if !bits.HasSingleBit(blit & itemBlit) {
+			if !HasSingleBit(blit & itemBlit) {
 				continue
 			}
 			candidates = append(candidates, item)
@@ -57,8 +53,8 @@ func (b *board) SolveYWing() error {
 			wingBlit1 := b.blits[list[0]]
 			wingBlit2 := b.blits[list[1]]
 
-			if bits.HasSingleBit(wingBlit1&wingBlit2) &&
-				bits.GetNumberOfSetBits(blit|wingBlit1|wingBlit2) == 3 {
+			if HasSingleBit(wingBlit1&wingBlit2) &&
+				GetNumberOfSetBits(blit|wingBlit1|wingBlit2) == 3 {
 				wingsList = append(wingsList, list)
 			}
 		}
@@ -85,11 +81,11 @@ func (b *board) SolveYWing() error {
 
 			/*var once1 sync.Once
 			print1 := func() {
-				fmt.Printf("* %#2v %s\n", getCoords(i), bits.GetString(blit))
+				fmt.Printf("* %#2v %s\n", getCoords(i), GetString(blit))
 				fmt.Printf("wing set %d:\n", idx+1)
-				fmt.Printf("-- %#2v %s\n", getCoords(wings[0]), bits.GetString(b.blits[wings[0]]))
-				fmt.Printf("-- %#2v %s\n", getCoords(wings[1]), bits.GetString(b.blits[wings[1]]))
-				fmt.Printf("-- remove hint: %d\n", bits.GetSingleBitValue(removeHint))
+				fmt.Printf("-- %#2v %s\n", getCoords(wings[0]), GetString(b.blits[wings[0]]))
+				fmt.Printf("-- %#2v %s\n", getCoords(wings[1]), GetString(b.blits[wings[1]]))
+				fmt.Printf("-- remove hint: %d\n", GetSingleBitValue(removeHint))
 				fmt.Printf("-- targets:\n")
 			}*/
 
@@ -99,7 +95,7 @@ func (b *board) SolveYWing() error {
 					continue
 				}
 				/*once1.Do(print1)
-				fmt.Printf("---- %#2v %s\n", getCoords(target), bits.GetString(b.blits[target]))*/
+				fmt.Printf("---- %#2v %s\n", getCoords(target), GetString(b.blits[target]))*/
 				if b.blits[target]&removeHint == removeHint {
 					updated = true
 					if err := b.updateCandidates(target, i, ^removeHint); err != nil {
