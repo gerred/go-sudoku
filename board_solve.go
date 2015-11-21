@@ -39,28 +39,6 @@ type solver struct {
 	safetyCheck bool
 }
 
-func (b *board) getFastSolvers() []solver {
-	solvers := []solver{
-		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
-		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
-		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
-		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
-		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
-		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)}, // NOTE: not seen in any tests yet
-		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
-		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
-		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)}, // NOTE: not seen in any tests yet
-		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
-		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
-		{name: "BOX LINE", run: b.SolveBoxLine},
-		{name: "X-WING", run: b.SolveXWing},
-		{name: "Y-WING", run: b.SolveYWing},
-		{name: "SWORDFISH", run: b.SolveSwordFish},
-		{name: "XY-CHAIN", run: b.SolveXYChain, printBoard: true, safetyCheck: true},
-	}
-	return solvers
-}
-
 func (b *board) getSolvers() []solver {
 	solvers := []solver{
 		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
@@ -76,9 +54,9 @@ func (b *board) getSolvers() []solver {
 		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
 		{name: "BOX LINE", run: b.SolveBoxLine},
 		{name: "X-WING", run: b.SolveXWing},
+		{name: "SIMPLE-COLORING", run: b.SolveSimpleColoring},
 		{name: "Y-WING", run: b.SolveYWing},
 		{name: "SWORDFISH", run: b.SolveSwordFish},
-
 		{name: "XY-CHAIN", run: b.SolveXYChain},
 	}
 
