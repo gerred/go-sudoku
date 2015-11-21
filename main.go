@@ -85,16 +85,19 @@ func main() {
 
 	//runFile("./test_files/12_tough_20151107_173.txt")
 	// 000000000000000000000000000000000000000000000000000000000000000000000000000000000
+	// diabolical: 074302000000005040000607900056000790300000005027000680005701000010200000000408160
 	// 8 SLNS: 080009743050008010010000000800005000000804000000300006000000070030500080972400050
 	// UNSAT: 020400006400089000000007004001008060000700008030060500060000010005000300910800007
 	// SAT: 020400000400089000000007004001008060000700008030060500060000010005000300910800007
-	/*b, _ := loadBoard([]byte(`097003420604020000300700000080407000503002006010086040400005008000170000000040270`))
+	b, _ := loadBoard([]byte(`074302000000005040000607900056000790300000005027000680005701000010200000000408160`))
+	b.CountSolutions = true
+	b.MaxSolutions = 500
 	b.PrintURL()
 	err := b.Solve()
 	if err != nil {
 		log.Fatal(err)
 	}
-	b.Print()*/
+	b.Print()
 
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
@@ -105,7 +108,7 @@ func main() {
 	//runList("./test_files/weekly_unsolvable.txt", *max_iterations)
 	//runList("./test_files/sudokus.txt", *max_iterations)
 
-	generate()
+	//generate()
 
 	if *profile {
 		stopProfile()
@@ -155,7 +158,10 @@ func generate() {
 
 	//b.PrintHints()
 
-	digHoles(b)
+	err = digHoles(b)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	/*b.CountSolutions = true
 
@@ -168,160 +174,140 @@ func generate() {
 
 func digHoles(b *board) error {
 	var err error
-	var b2 *board
-restartLoop:
-	for {
-		b2, err = loadBoard([]byte("000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
+	b2 := &board{solved: b.solved, blits: b.blits}
+	if err != nil {
+		return err
+	}
+
+	step := 1
+	failures := 0
+	check := make(map[int]interface{})
+	for len(check) != 81 {
+		goodSolved := b2.solved
+		goodBlits := b2.blits
+
+		pos1 := rand.Intn(81)
+		if step == 1 {
+			if _, ok := check[pos1]; ok {
+				continue
+			}
+			check[pos1] = struct{}{}
+		}
+		if b2.solved[pos1] == 0 {
+			continue
+		}
+
+		coords := getCoords(pos1)
+		secondRow := 8 - coords.row
+		if secondRow < 0 {
+			secondRow += 8
+		}
+		secondCol := 8 - coords.col
+		if secondCol < 0 {
+			secondCol += 8
+		}
+
+		if step == 4 {
+			pos2 := coords.row*9 + secondCol
+			pos3 := secondRow*9 + coords.col
+			pos4 := secondRow*9 + secondCol
+
+			if b2.solved[pos2] == 0 || b2.solved[pos3] == 0 || b2.solved[pos3] == 0 {
+				continue
+			}
+
+			b2.solved[pos1] = 0
+			b2.solved[pos2] = 0
+			b2.solved[pos3] = 0
+			b2.solved[pos4] = 0
+		} else if step == 2 {
+			pos2 := secondRow*9 + secondCol
+
+			if b2.solved[pos2] == 0 {
+				continue
+			}
+
+			b2.solved[pos1] = 0
+			b2.solved[pos2] = 0
+		} else {
+			b2.solved[pos1] = 0
+		}
+
+		for j := 0; j < 81; j++ {
+			if b2.solved[j] != 0 {
+				continue
+			}
+			b2.blits[j] = b2.getHints(j)
+		}
+
+		b3 := board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 2}
+		err = b3.Solve()
 		if err != nil {
 			return err
 		}
 
-		// solve digits 1-9, minimum guarantee for a unique solution
-		j := 1
-		for b2.numSolved() != 9 {
-			n := rand.Intn(81)
-			if b2.solved[n] != 0 || b.solved[n] != uint(j) {
-				continue
+		//fmt.Printf("sln count: %d\n", b3.SolutionCount)
+
+		if b3.SolutionCount > 1 {
+			//return fmt.Errorf("bad dig, more than 1 solution")
+			b2.solved = goodSolved
+			b2.blits = goodBlits
+			failures++
+			if step > 1 && failures == 5 {
+				failures = 0
+				step /= 2
 			}
-			j++
-			err = b2.SolvePosition(n, b.solved[n])
-			if err != nil {
-				return err
-			}
-		}
-
-		// solve to 17 cells
-		for b2.numSolved() < 17 {
-			b2.Print()
-			fmt.Printf("num solved: %d\n", b2.numSolved())
-			check := make(map[int]interface{})
-			minslncount := -1
-			minslncount_n := -1
-			for {
-				if len(check) == 81 {
-					break
-				}
-
-				n := rand.Intn(81)
-				if _, ok := check[n]; ok {
-					continue
-				}
-				check[n] = struct{}{}
-
-				if b2.solved[n] != 0 {
-					continue
-				}
-
-				b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 100}
-
-				// see if the sln count has changed
-				err = b3.SolvePosition(n, b.solved[n])
-				if err != nil {
-					return err
-				}
-				if err = b3.SolveSAT(); err != nil {
-					return err
-				}
-
-				if minslncount == -1 || minslncount > b3.SolutionCount {
-					minslncount = b3.SolutionCount
-					minslncount_n = n
-				}
-			}
-
-			if minslncount == -1 {
-				continue restartLoop
-			}
-
-			// solve the cell in b2
-			if minslncount != 0 {
-				err = b2.SolvePosition(minslncount_n, b.solved[minslncount_n])
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		// solve the rest needed for a unique solution
-		//var oldslncount int
-		for {
-			b2.Print()
-			fmt.Printf("num solved: %d\n", b2.numSolved())
-			if b2.numSolved() > 30 {
-				fmt.Printf("restartd, %d solved..\n", b2.numSolved())
-				continue restartLoop
-			}
-
-			b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 500}
-			err = b3.Solve()
-			if err != nil {
-				continue restartLoop
-			}
-
-			//oldslncount = b3.SolutionCount
-
-			if err == nil && b3.isSolved() && b3.SolutionCount <= 1 {
-				break restartLoop
-			}
-
-			check := make(map[int]interface{})
-			minslncount := -1
-			minslncount_n := -1
-			for {
-				if len(check) == 81 {
-					break
-				}
-
-				n := rand.Intn(81)
-				if _, ok := check[n]; ok {
-					continue
-				}
-				check[n] = struct{}{}
-
-				if b2.solved[n] != 0 {
-					continue
-				}
-
-				b3 := &board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 500}
-
-				// see if the sln count has changed
-				err = b3.SolvePosition(n, b.solved[n])
-				if err != nil {
-					return err
-				}
-				if err = b3.SolveSAT(); err != nil {
-					return err
-				}
-
-				if minslncount == -1 || minslncount > b3.SolutionCount {
-					minslncount = b3.SolutionCount
-					minslncount_n = n
-				}
-			}
-
-			if minslncount == -1 {
-				continue restartLoop
-			}
-
-			// solve the cell in b2
-			err = b2.SolvePosition(minslncount_n, b.solved[minslncount_n])
-			if err != nil {
-				return err
-			}
+		} else {
+			//b2.PrintHints()
 		}
 	}
 
-	b3 := &board{solved: b2.solved, blits: b2.blits, SkipSAT: true}
-	b3.Print()
-	b3.PrintURL()
-	fmt.Printf("num solved: %d\n", b3.numSolved())
-	err = b3.Solve()
-	if err != nil {
-		log.Fatal(err)
-	}
-	b3.Print()
+	fmt.Printf("-----------------\n")
+	b2.Print()
+	b2.PrintURL()
+	fmt.Printf("hint count: %d\n", b2.numSolved())
+	b2.CountSolutions = true
+	b2.MaxSolutions = 2
+	b2.Solve()
+	fmt.Printf("sln count: %d\n", b2.SolutionCount)
+	//b2.PrintHints()
+	b2.Print()
 
 	return nil
+}
+
+func (b *board) getHints(pos int) uint {
+	check := make(map[uint]interface{})
+	for i := uint(1); i <= 9; i++ {
+		check[i] = struct{}{}
+	}
+
+	removeHints := func(target int, source int) error {
+		if target == source {
+			return nil
+		}
+		val := b.solved[target]
+		if val == 0 {
+			return nil
+		}
+
+		if _, ok := check[val]; ok {
+			delete(check, val)
+		}
+
+		return nil
+	}
+
+	if err := b.operateOnRCB(pos, removeHints); err != nil {
+		// TODO: return err
+		return 0
+	}
+
+	blits := uint(0)
+	for k := range check {
+		blits |= 1 << (k - 1)
+	}
+	return blits
 }
 
 func startProfile() {
