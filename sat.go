@@ -418,7 +418,6 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 	} else {
 		s3 := set(s2, *val, false)
 		if s3 != nil {
-			//fmt.Printf("%d %t, %d %d\n", val, isOn, len(final), len(s3))
 			final = append(final, s3...)
 		}
 
@@ -428,7 +427,6 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 			if s3 == nil || s2.FindMultipleSolutions {
 				s4 := set(s2, *val, true)
 				if s4 != nil {
-					//fmt.Printf("%d %t, %d %d\n", val, isOn, len(final), len(s4))
 					final = append(final, s4...)
 				}
 			}
@@ -462,18 +460,24 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 
 func up(clause *[2]uint64, v uint64, isOn bool) *[2]uint64 {
 	var idx int
-	if idx = indexOfValue(clause, v); idx != -1 {
-		if isOn {
-			return satisfied
+	for {
+		if idx = indexOfValue(clause, v); idx != -1 {
+			if isOn {
+				return satisfied
+			}
+			clause = cut(clause, idx)
+		} else if idx = indexOfValue(clause, v|0x400); idx != -1 {
+			if !isOn {
+				return satisfied
+			}
+			clause = cut(clause, idx)
+		} else {
+			return clause
 		}
-		return cut(clause, idx)
-	} else if idx = indexOfValue(clause, v|0x400); idx != -1 {
-		if !isOn {
-			return satisfied
+
+		if clause == nil {
+			return nil
 		}
-		return cut(clause, idx)
-	} else {
-		return clause
 	}
 }
 
@@ -602,3 +606,38 @@ func indexOfValue(clause *[2]uint64, val uint64) int {
 	}
 	return -1*/
 }
+
+/*
+// debug function
+func clauseToIntArray(clause [2]uint64) []int {
+	length := int((clause[0] & lenMask) >> 59)
+	if length == 0 {
+		return []int{}
+	}
+
+	var list []int
+
+	shift := uint(44)
+	cur := clause[0]
+	for i := 0; i < length; i++ {
+		curval := (cur >> shift) & 0x7FF
+
+		on := curval&0x400 == 0
+		curval &= 0x3FF
+		if !on {
+			curval = -curval
+		}
+
+		list = append(list, int(curval))
+
+		if shift == 0 {
+			shift = 44
+			cur = clause[1]
+		} else {
+			shift -= 11
+		}
+	}
+
+	return list
+}
+*/

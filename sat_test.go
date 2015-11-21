@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -23,46 +22,88 @@ func TestSolve(t *testing.T) {
 		 1 0
 		 2 0
 		 -1 3 0`,
-		// (x ∨ x ∨ y) ∧ (¬x ∨ ¬y ∨ ¬y) ∧ (¬x ∨ y ∨ y) x: True, y: False
+		// (x ∨ x ∨ y) ∧ (¬x ∨ ¬y ∨ ¬y) ∧ (¬x ∨ y ∨ y) x: False, y: True
 		`p cnf 2 3
 		 1 1 2 0
 		 -1 -2 -2 0
 		 -1 2 2 0`,
 	}
 
-	for _, input := range inputs {
-		testInput(t, input)
+	expecteds := [][][]SetVar{
+		// (a ∨ ¬b) ∧ (a ∨ b) should return a: True, b: anything
+		[][]SetVar{
+			[]SetVar{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: false}},
+			[]SetVar{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: true}},
+		},
+		// (a ∧ b) ∧ (a ∧ ¬b) should return: null
+		nil,
+		// (a ∧ b) ∧ (¬b ∨ c) should return: a: True, b: True, c: True.
+		[][]SetVar{
+			[]SetVar{SetVar{VarNum: 3, Value: true}, SetVar{VarNum: 2, Value: true}, SetVar{VarNum: 1, Value: true}},
+		},
+		// (x ∨ x ∨ y) ∧ (¬x ∨ ¬y ∨ ¬y) ∧ (¬x ∨ y ∨ y) x: False, y: True
+		[][]SetVar{
+			[]SetVar{SetVar{VarNum: 1, Value: false}, SetVar{VarNum: 2, Value: true}},
+		},
+	}
+
+	for i, input := range inputs {
+		if i < len(inputs)-1 {
+			continue
+		}
+		expectedSlns := expecteds[i]
+
+		slns := testInput(t, input)
+
+		if slns == nil || len(slns) == 0 {
+			if expectedSlns != nil {
+				t.Fatalf("test idx: %d. no solution expected, actual: %#v", i, slns)
+			}
+			continue
+		}
+
+		if len(slns) != len(expectedSlns) {
+			t.Fatalf("test idx: %d. expected %d solutions, actual: %d - %#v", i, len(expectedSlns), len(slns), slns)
+		}
+
+		for j, expected := range expectedSlns {
+			actual := slns[j].SetVars
+
+			if len(actual) != len(expected) {
+				t.Fatalf("test idx: %d. sln: %d/%d. expected: %#v actual: %#v", i, j+1, len(expectedSlns), expected, actual)
+			}
+
+			for _, e := range expected {
+				found := false
+				for _, a := range actual {
+					if a.Value == e.Value {
+						found = true
+						if a.VarNum != a.VarNum {
+							t.Fatalf("test idx: %d. sln: %d/%d. expected: %d %t actual: %d %t", i, j+1, len(expectedSlns), e.VarNum, e.Value, a.VarNum, a.Value)
+						}
+					}
+				}
+				if !found {
+					t.Fatalf("test idx: %d. sln: %d/%d. expected: %d %t actual: not found", i, j+1, len(expectedSlns), e.VarNum, e.Value)
+				}
+			}
+		}
 	}
 }
 
-func testInput(t *testing.T, input string) {
-	fmt.Println()
-	if len(input) < 1000 {
-		fmt.Println(input)
-	}
-	sat, err := NewSAT(input, false, 0)
+func testInput(t *testing.T, input string) []*sat {
+	sat, err := NewSAT(input, true, 100)
 	if err != nil {
-		fmt.Println(err)
 		t.Fatal(err)
 	}
-	fmt.Printf("clauses:  %#v\n", sat.Clauses)
 	sln := sat.Solve()
-	if sln == nil || len(sln) == 0 {
-		fmt.Printf("no solution\n")
-	} else {
-		for _, item := range sln {
-			fmt.Printf("set vars: %v\n", item.SetVars)
-			fmt.Printf("clauses:  %#v\n", item.Clauses)
-		}
-	}
+	return sln
 }
 
 func TestHasClause(t *testing.T) {
 	clauseIntArray := []int{0, 2, 6, 8, 12}
 	clause := intArrayToBin(clauseIntArray)
-	//fmt.Printf("%b %b\n", clause[0], clause[1])
 	for idx, val := range clauseIntArray {
-		//fmt.Printf("%d\n", idx)
 		actual := indexOfValue(&clause, uint64(val))
 		if actual != idx {
 			t.Fatalf("%d not found in clause %b %b. idx:%d", val, clause[0], clause[1], idx)
@@ -74,20 +115,6 @@ func TestHasClause(t *testing.T) {
 	for idx, val := range clauseIntArray {
 		actual := indexOfValue(&clause, uint64(val))
 		if actual != idx {
-			// 110 0000 = 6
-			// 00000000000 = 0
-			// 00000000010 = 2
-			// 00000000110 = 6
-			// 00000001000 = 8
-			// 00000001100 = 12
-
-			// 111
-			// 00000000000
-			// 00000000000
-			// 00000000000
-			// 00000000000
-			//         111000000000000000000000000000000000000000000000
-			// 1234567890x1234567890x1234567890x12345678901x12345678901
 			t.Fatalf("%d not found in clause %b %b. idx:%d", val, clause[0], clause[1], idx)
 		}
 	}
@@ -99,13 +126,6 @@ func TestHasClause(t *testing.T) {
 		if val < 0 {
 			uintVal |= 0x400
 		}
-
-		//  100000
-		// 11110101001
-		// 11011100001
-		// 11011100001
-		// 000000000000000000000000000000000
-		// 111xxxx1234567890x1234567890x1234567890x12345678901x12345678901
 
 		actual := indexOfValue(&clause, uintVal)
 		if actual != idx {
