@@ -3,3 +3,5 @@
 *.prof
 *.pprof
 *.mprof
+test_results/
+misc/
