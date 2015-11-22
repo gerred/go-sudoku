@@ -3,5 +3,7 @@
 *.prof
 *.pprof
 *.mprof
+*.*~
+cover.out
 test_results/
 misc/
