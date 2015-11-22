@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -34,7 +35,7 @@ func main() {
 		find := "load_from_script(false,'e"
 		for {
 			line, err := r.ReadString('\n')
-			if line == "" || err != nil {
+			if line == "" || (err != nil && err != io.EOF) {
 				break
 			}
 			idx := strings.Index(line, find)
@@ -188,12 +189,12 @@ func readStatsFile(fileName string) error {
 
 	r := bufio.NewReader(f)
 	line, err := r.ReadString('\n')
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 
 	puzzle := 1
-	for line != "" && err == nil {
+	for line != "" {
 		if strings.HasPrefix(line, prefix) {
 			line = strings.Trim(line[len(prefix):], " \n\r")
 			var d time.Duration
@@ -203,7 +204,7 @@ func readStatsFile(fileName string) error {
 			fmt.Printf("%d\t%v\n", puzzle, d.Nanoseconds()/int64(time.Millisecond))
 			puzzle++
 		}
-		if line, err = r.ReadString('\n'); err != nil {
+		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
 			return err
 		}
 	}
@@ -288,7 +289,7 @@ func runList(fileName string, maxPuzzles int) error {
 
 	r := bufio.NewReader(bytes.NewReader(b))
 	line, err := r.ReadString('\n')
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 	for i := 0; line != "" && (maxPuzzles == -1 || i < maxPuzzles); i++ {
@@ -319,8 +320,7 @@ func runList(fileName string, maxPuzzles int) error {
 		fmt.Printf("Solve time: %v\n", time.Since(start1))
 
 		line, err = r.ReadString('\n')
-		if err != nil {
-			// TODO: EOF error should just break
+		if err != nil && err != io.EOF {
 			return err
 		}
 	}

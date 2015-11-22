@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,14 +112,11 @@ func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*SAT, e
 	}
 
 	// get clauses
-	if line, err = r.ReadString('\n'); err != nil {
-		if err.Error() == "EOF" {
-			// TODO: if clauses = 0, this is okay.
-		}
+	if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
+		// TODO: if clauses = 0, this is okay.
 		return nil, err
 	}
 
-	var lastLine bool
 	for i := 0; line != ""; i++ {
 		line = strings.Trim(line, " \r\n\t")
 		if strings.HasPrefix(line, "c ") {
@@ -133,18 +131,7 @@ func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*SAT, e
 		}
 		s.Clauses[i] = intArrayToBin(parts)
 
-		if lastLine == true {
-			break
-		}
-
-		if line, err = r.ReadString('\n'); err != nil {
-			if err.Error() == "EOF" {
-				if line != "" {
-					lastLine = true
-					continue
-				}
-				break
-			}
+		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
 			return nil, err
 		}
 	}
