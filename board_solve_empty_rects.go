@@ -75,8 +75,9 @@ func (b *board) SolveEmptyRectangles() error {
 		c1 := getCoords(i)
 
 		if b.changed {
+			fmt.Printf("SOLVED WITH EMPTY-RECTANGLES\n")
 			// let simpler techniques take over
-			fmt.Printf("%#v - board changed\n", c1)
+			//fmt.Printf("%#v - board changed\n", c1)
 			return nil
 		}
 
@@ -113,7 +114,7 @@ func (b *board) SolveEmptyRectangles() error {
 		// An Empty Rectangle occurs within a box where four cells form a
 		// rectangle which does NOT contain a certain candidate.
 
-		for formIdx, form := range checkRects {
+		for _, form := range checkRects {
 			//c2 := getCoords(form.intersectOffset + i)
 
 			var hintSum uint
@@ -224,21 +225,22 @@ func (b *board) SolveEmptyRectangles() error {
 					}
 
 					if len(links) == 1 {
-						fmt.Printf("- row cand: %#v\n", getCoords(rowCand))
+						/*fmt.Printf("- row cand: %#v\n", getCoords(rowCand))
 						fmt.Printf("box: %d, form: %d, intersect: %#v, missing hints: %s, shared hints: %s\n", c1.box, formIdx, getCoords(i+form.intersectOffset), GetBitsString(missingHints), GetBitsString(sharedHints))
 						for _, cellOffset := range form.cornerOffsets {
 							fmt.Printf("- %#2v %s\n", getCoords(i+cellOffset), GetBitsString(b.blits[i+cellOffset]))
 						}
-						fmt.Printf("-- STRONG LINK!\n")
+						fmt.Printf("-- STRONG LINK!\n")*/
 
 						target, err := b.getIntersection(links[0], i+form.intersectOffset, rowCand)
 						if getCoords(target).box == c1.box {
-							fmt.Printf("-- but it's in our box :(\n")
+							// in our box, move on
+							//fmt.Printf("-- but it's in our box :(\n")
 						} else {
 							if err != nil {
 								return err
 							}
-							fmt.Printf("---- Target: %#v %d\n", getCoords(target), GetSingleBitValue(hint))
+							//fmt.Printf("---- Target: %#v %d\n", getCoords(target), GetSingleBitValue(hint))
 							if err := b.updateCandidates(target, i+form.intersectOffset, ^hint); err != nil {
 								return err
 							}
@@ -253,21 +255,22 @@ func (b *board) SolveEmptyRectangles() error {
 					}
 
 					if len(links) == 1 {
-						fmt.Printf("- col cand: %#v\n", getCoords(colCand))
+						/*fmt.Printf("- col cand: %#v\n", getCoords(colCand))
 						fmt.Printf("box: %d, form: %d, intersect: %#v, missing hints: %s, shared hints: %s\n", c1.box, formIdx, getCoords(i+form.intersectOffset), GetBitsString(missingHints), GetBitsString(sharedHints))
 						for _, cellOffset := range form.cornerOffsets {
 							fmt.Printf("- %#2v %s\n", getCoords(i+cellOffset), GetBitsString(b.blits[i+cellOffset]))
 						}
-						fmt.Printf("-- STRONG LINK!\n")
+						fmt.Printf("-- STRONG LINK!\n")*/
 
 						target, err := b.getIntersection(links[0], i+form.intersectOffset, colCand)
 						if err != nil {
 							return err
 						}
 						if getCoords(target).box == c1.box {
-							fmt.Printf("-- but it's in our box :(\n")
+							// in our box, move on
+							//fmt.Printf("-- but it's in our box :(\n")
 						} else {
-							fmt.Printf("---- Target: %#v %d\n", getCoords(target), GetSingleBitValue(hint))
+							//fmt.Printf("---- Target: %#v %d\n", getCoords(target), GetSingleBitValue(hint))
 							if err := b.updateCandidates(target, i+form.intersectOffset, ^hint); err != nil {
 								return err
 							}

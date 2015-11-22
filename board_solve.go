@@ -33,10 +33,9 @@ func (b *board) Solve() error {
 }
 
 type solver struct {
-	run         func() error
-	name        string
-	printBoard  bool
-	safetyCheck bool
+	run        func() error
+	name       string
+	printBoard bool
 }
 
 func (b *board) getSimpleSolvers() []solver {

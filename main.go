@@ -57,7 +57,8 @@ func main() {
 
 	flags := flag.FlagSet{}
 	profile := flags.Bool("profile", false, "true profile cpu/mem")
-	max_iterations := flags.Int("run", -1, "max iterations")
+	runFile := flags.String("file", "", "file containing puzzle(s)")
+	max_iterations := flags.Int("max", -1, "max iterations")
 	read_stats := flags.String("readstats", "", "read stats from long run, print time taken per puzzle")
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		log.Fatal(err)
@@ -102,13 +103,17 @@ func main() {
 	}
 	b.Print()*/
 
+	if *runFile != "" {
+		runList(*runFile, *max_iterations)
+	}
+
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")
 	//runFile("./test_files/input.txt")
 	//runFile("./test_files/input_no_solution.txt")
 	//runList("./test_files/top95.txt", *max_iterations)
-	runList("./test_files/weekly_unsolvable.txt", *max_iterations)
+	//runList("./test_files/weekly_unsolvable.txt", *max_iterations)
 	//runList("./test_files/sudokus.txt", *max_iterations)
 
 	//generate()

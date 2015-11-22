@@ -17,7 +17,7 @@ func TestEmptyRects(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b.PrintHints()
+	//b.PrintHints()
 
 	// check board is in expected initial state
 	testHint(t, b, 3, 8, []uint{6, 7, 8})
@@ -33,7 +33,7 @@ func TestEmptyRects(t *testing.T) {
 		t.Fatal("board not changed")
 	}
 
-	b.PrintHints()
+	//b.PrintHints()
 
 	testHint(t, b, 3, 8, []uint{7, 8})
 }
@@ -89,7 +89,7 @@ func TestEmptyRects3(t *testing.T) {
 	b.SkipSAT = true
 	b.SolveWithSolversList(b.getSimpleSolvers())
 
-	b.PrintHints()
+	//b.PrintHints()
 
 	// check board is in expected initial state
 	testHint(t, b, 4, 8, []uint{2, 4, 6, 9})
@@ -106,11 +106,12 @@ func TestEmptyRects3(t *testing.T) {
 		t.Fatal("board not changed")
 	}
 
-	//testHint(t, b, 3, 8, []uint{7, 8})
+	// TODO: Asserts
 
+	//testHint(t, b, 3, 8, []uint{7, 8})
 }
 
-func testXYChain(t *testing.T) {
+func TestXYChain(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -220,7 +221,7 @@ func loadBoardWithHints(t *testing.T, hintBoard string) (b *board) {
 	return b
 }
 
-func testBoards(t *testing.T) {
+func TestBoards(t *testing.T) {
 	files := []string{
 		"./test_files/input.txt",
 		"./test_files/01_naked_single_493382.txt",
@@ -261,16 +262,16 @@ func testBoards(t *testing.T) {
 			t.Fatalf("%s: %s", file, err)
 			return
 		}
-		board.PrintURL()
+		//board.PrintURL()
 
 		if err = board.Solve(); err != nil {
 			t.Fatalf("%s: %s", file, err)
 			return
 		}
-		board.PrintHints()
-		board.PrintURL()
 
 		if !board.isSolved() {
+			board.PrintHints()
+			board.PrintURL()
 			t.Fatalf("%s: could not solve", file)
 			return
 		}
@@ -278,21 +279,21 @@ func testBoards(t *testing.T) {
 	fmt.Printf("solved %d puzzles\n", len(files))
 }
 
-func test29(t *testing.T) {
+func Test29(t *testing.T) {
 	file := "./test_files/29_ben.txt"
 	board, err := getBoard(file)
 	if err != nil {
 		t.Fatalf("%s: %s", file, err)
 		return
 	}
-	board.PrintURL()
+	//board.PrintURL()
 
 	if err = board.Solve(); err != nil {
 		t.Fatalf("%s: %s", file, err)
 		return
 	}
-	board.PrintHints()
-	board.PrintURL()
+	//board.PrintHints()
+	//board.PrintURL()
 
 	if !board.isSolved() {
 		t.Fatalf("%s: could not solve", file)
@@ -313,7 +314,7 @@ func getKnownAnswer(t *testing.T, answer string) *[81]byte {
 	return &ka
 }
 
-func test13329(t *testing.T) {
+func Test13329(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -334,7 +335,7 @@ func test13329(t *testing.T) {
 `
 
 	b := loadBoardWithHints(t, hintBoard)
-	b.PrintURL()
+	//b.PrintURL()
 	b.knownAnswer = getKnownAnswer(t, "872691534431275896695438271269513487183724659547986123914352768758169342326847915")
 
 	/*
@@ -370,7 +371,7 @@ func test13329(t *testing.T) {
 	// TODO
 }
 
-func testXWing(t *testing.T) {
+func TestXWing(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -390,8 +391,8 @@ func testXWing(t *testing.T) {
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
 	`
 	b := loadBoardWithHints(t, hintBoard)
-	b.PrintHints()
-	b.PrintURL()
+	//b.PrintHints()
+	//b.PrintURL()
 	b.knownAnswer = getKnownAnswer(t, "872691534431275896695438271269513487183724659547986123914352768758169342326847915")
 
 	/*
