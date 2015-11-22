@@ -98,7 +98,7 @@ func digHoles(b *board) error {
 			pos3 := secondRow*9 + coords.col
 			pos4 := secondRow*9 + secondCol
 
-			if b2.solved[pos2] == 0 || b2.solved[pos3] == 0 || b2.solved[pos3] == 0 {
+			if b2.solved[pos2] == 0 || b2.solved[pos3] == 0 || b2.solved[pos4] == 0 {
 				continue
 			}
 
