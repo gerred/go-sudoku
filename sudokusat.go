@@ -166,8 +166,8 @@ func (b *board) getSAT() string {
 							cur2 := getRCV(r2, c2, v)
 
 							clause := fmt.Sprintf("-%d -%d 0\n", cur, cur2)
-							clause_inv := fmt.Sprintf("-%d -%d 0\n", cur2, cur)
-							if _, ok := cheat[clause_inv]; ok {
+							clauseReversed := fmt.Sprintf("-%d -%d 0\n", cur2, cur)
+							if _, ok := cheat[clauseReversed]; ok {
 								continue
 							}
 							cheat[clause] = struct{}{}

@@ -91,7 +91,7 @@ func TestSolve(t *testing.T) {
 	}
 }
 
-func testInput(t *testing.T, input string) []*sat {
+func testInput(t *testing.T, input string) []*SAT {
 	sat, err := NewSAT(input, true, 100)
 	if err != nil {
 		t.Fatal(err)
@@ -135,36 +135,33 @@ func TestHasClause(t *testing.T) {
 }
 
 func TestUnitPropogation(t *testing.T) {
+	// clause: 1 2 6 8 12
 	clause := intArrayToBin([]int{1, 2, 6, 8, 12})
 
-	expected_tmp := intArrayToBin([]int{1, 2, 6, 8})
-	expected := &expected_tmp
+	expected := intArrayToBin([]int{1, 2, 6, 8})
 	actual := up(&clause, 12, false)
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(&expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = satisfied
+	expected = *satisfied
 	actual = up(&clause, 12, true)
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(&expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
+	// clause: -1 2 6 8 12
 	clause = intArrayToBin([]int{-1, 2, 6, 8, 12})
 
-	expected_tmp = intArrayToBin([]int{2, 6, 8, 12})
-	expected = &expected_tmp
-	//fmt.Printf("clause before1: %v\n", clause)
+	expected = intArrayToBin([]int{2, 6, 8, 12})
 	actual = up(&clause, 1, true)
-	//fmt.Printf("clause before2: %v\n", clause)
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(&expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 
-	expected = satisfied
-	//fmt.Printf("clause before3: %v\n", clause)
+	expected = *satisfied
 	actual = up(&clause, 1, false)
-	if !reflect.DeepEqual(expected, actual) {
+	if !reflect.DeepEqual(&expected, actual) {
 		t.Fatalf("expected: %v actual: %v", expected, actual)
 	}
 }

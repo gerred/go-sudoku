@@ -242,7 +242,7 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 }
 
 func getPermutations(n int, pickList []int, curList []int) [][]int {
-	output := make([][]int, 0)
+	var output [][]int
 
 	for i := 0; i < len(pickList); i++ {
 		list := make([]int, len(curList))

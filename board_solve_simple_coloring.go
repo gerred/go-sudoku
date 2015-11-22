@@ -21,7 +21,7 @@ valueLoop:
 					continue
 				}
 
-				links := make([]int, 0)
+				var links []int
 				getSingleLink := func(target int, source int) error {
 					if target == source {
 						return nil

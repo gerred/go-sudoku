@@ -13,23 +13,55 @@ const lenMask = 0xF800000000000000
 const len1 = 0x800000000000000
 const len2 = 0x1000000000000000
 
-var satisfied *[2]uint64 = &[2]uint64{0xFF, 0xFF}
+var satisfied = &[2]uint64{0xFF, 0xFF}
 
-type SetVar struct {
-	VarNum uint64
-	Value  bool
-}
-
-type sat struct {
+// SAT represents a list of clauses. When solved, the SetVars field
+// represents a single solution to the SAT problem.
+type SAT struct {
 	SetVars               []SetVar
 	Clauses               [][2]uint64
 	FindMultipleSolutions bool
 	MaxSolutions          int
 }
 
-func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*sat, error) {
-	// load CNF input
+// SetVar represents a variable set to either true or false used to
+// satisfy the list of clauses.
+type SetVar struct {
+	VarNum uint64
+	Value  bool
+}
 
+// NewSAT initializes a new SAT struct.
+//
+//  input:
+//      the SAT input including header.
+//
+//      for example, the CNF formula:
+//      (a) ? (b) ? (¬b ? c)
+//
+//      has the input value:
+//
+//      p cnf 3 3
+//      1 0
+//      2 0
+//      -1 3 0
+//
+//      where the first 3 in the header is the number of variables
+//      and the second 3 is the number of clauses which follow.
+//      all clause lines must end with a literal 0.
+//
+//      more information can be found at this address:
+//      http://www.satcompetition.org/2004/format-solvers2004.html
+//
+//  findMultipleSolutions:
+//      set to true to find multiple solutions; otherwise, Solve will
+//      stop after the first solution is found (if any).
+//
+//  maxSolutions:
+//      set to limit the number of possible solutions returned. has no
+//      effect if findMultipleSolutions is false.
+func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*SAT, error) {
+	// load CNF input
 	sr := strings.NewReader(input)
 	r := bufio.NewReader(sr)
 
@@ -64,7 +96,7 @@ func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*sat, e
 	}
 
 	// TODO: validate variable, clause count
-	s := &sat{
+	s := &SAT{
 		Clauses:               make([][2]uint64, clauseCount),
 		FindMultipleSolutions: findMultipleSolutions,
 		MaxSolutions:          maxSolutions,
@@ -207,7 +239,7 @@ func abs(x int) int {
 	return list
 }*/
 
-func (s *sat) getAllSingleVarClauses() []SetVar {
+func (s *SAT) getAllSingleVarClauses() []SetVar {
 	/*check := make(map[uint64]struct{})
 	for _, clause := range s.Clauses {
 		c := clause[0]
@@ -247,7 +279,7 @@ func (s *sat) getAllSingleVarClauses() []SetVar {
 	return list
 }
 
-func (s *sat) getNextSingleVar() (*uint64, *bool) {
+func (s *SAT) getNextSingleVar() (*uint64, *bool) {
 	var val uint64
 
 	// find a clause with a single variable
@@ -265,7 +297,7 @@ func (s *sat) getNextSingleVar() (*uint64, *bool) {
 	return nil, nil
 }
 
-func (s *sat) getNextVar() (*uint64, *bool) {
+func (s *SAT) getNextVar() (*uint64, *bool) {
 	singleVal, on := s.getNextSingleVar()
 	if singleVal != nil {
 		return singleVal, on
@@ -286,9 +318,13 @@ func (s *sat) getNextVar() (*uint64, *bool) {
 	return &val, nil
 }
 
-func (s *sat) Solve() []*sat {
+// Solve solves a boolean satisfiability problem.
+// If the set of clauses are unsatisfiable nil is returned.
+// If FindMultipleSolutions is true a slice of solutions is returned.
+// If MaxSolutions is specified the number of solution is limited to this number.
+func (s *SAT) Solve() []*SAT {
 	val, on := s.getNextVar()
-	var s2, s3 []*sat
+	var s2, s3 []*SAT
 	if on != nil {
 		s2 = set(s, *val, *on)
 	} else {
@@ -298,7 +334,7 @@ func (s *sat) Solve() []*sat {
 		}
 	}
 
-	var final []*sat
+	var final []*SAT
 	if s2 != nil {
 		final = append(final, s2...)
 	}
@@ -313,42 +349,14 @@ func (s *sat) Solve() []*sat {
 	return final
 }
 
-/*func (s2 *sat) solveSingleVarClauses() (*sat, []SetVar) {
+func (s *SAT) solveSingleVarClauses() (*SAT, []SetVar) {
 	var bigList []SetVar
 
-	val, on := s2.getNextSingleVar()
-	for val != nil {
-		var clauses [][2]uint64
-		for _, clause := range s2.Clauses {
-			newClause := up(&clause, *val, *on)
-			if newClause != nil {
-				if newClause != satisfied {
-					clauses = append(clauses, *newClause)
-				}
-			} else {
-				return nil, nil
-			}
-		}
-
-		s2.Clauses = clauses
-		bigList = append(bigList, SetVar{VarNum: *val, Value: *on})
-		if len(clauses) == 0 {
-			break
-		}
-		val, on = s2.getNextSingleVar()
-	}
-
-	return s2, bigList
-}*/
-
-func (s2 *sat) solveSingleVarClauses2() (*sat, []SetVar) {
-	var bigList []SetVar
-
-	list := s2.getAllSingleVarClauses()
+	list := s.getAllSingleVarClauses()
 	for len(list) != 0 {
 		for _, item := range list {
 			var clauses [][2]uint64
-			for _, clause := range s2.Clauses {
+			for _, clause := range s.Clauses {
 				newClause := up(&clause, item.VarNum, item.Value)
 				if newClause != nil {
 					if newClause != satisfied {
@@ -359,23 +367,23 @@ func (s2 *sat) solveSingleVarClauses2() (*sat, []SetVar) {
 				}
 			}
 
-			s2.Clauses = clauses
-			if len(s2.Clauses) == 0 {
+			s.Clauses = clauses
+			if len(s.Clauses) == 0 {
 				break
 			}
 		}
 		bigList = append(bigList, list...)
-		if len(s2.Clauses) == 0 {
+		if len(s.Clauses) == 0 {
 			break
 		}
-		list = s2.getAllSingleVarClauses()
+		list = s.getAllSingleVarClauses()
 	}
 
-	return s2, bigList
+	return s, bigList
 }
 
-func set(s1 *sat, v uint64, isOn bool) []*sat {
-	s2 := &sat{FindMultipleSolutions: s1.FindMultipleSolutions, MaxSolutions: s1.MaxSolutions}
+func set(s1 *SAT, v uint64, isOn bool) []*SAT {
+	s2 := &SAT{FindMultipleSolutions: s1.FindMultipleSolutions, MaxSolutions: s1.MaxSolutions}
 
 	for _, clause := range s1.Clauses {
 		newClause := up(&clause, v, isOn)
@@ -390,12 +398,12 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 
 	if len(s2.Clauses) == 0 {
 		s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
-		return []*sat{s2}
+		return []*SAT{s2}
 	}
 
 	var bigList []SetVar
 	if s2.FindMultipleSolutions {
-		s2, bigList = s2.solveSingleVarClauses2()
+		s2, bigList = s2.solveSingleVarClauses()
 		if s2 == nil {
 			return nil
 		}
@@ -403,13 +411,13 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 		if len(s2.Clauses) == 0 {
 			s2.SetVars = append(s2.SetVars, bigList...)
 			s2.SetVars = append(s2.SetVars, SetVar{VarNum: v, Value: isOn})
-			return []*sat{s2}
+			return []*SAT{s2}
 		}
 	}
 
 	val, on := s2.getNextVar()
 
-	var final []*sat
+	var final []*SAT
 	if on != nil {
 		s3 := set(s2, *val, *on)
 		if s3 != nil {
@@ -446,17 +454,6 @@ func set(s1 *sat, v uint64, isOn bool) []*sat {
 
 	return final
 }
-
-/*func (s *sat) checkKnownAnswers(v int, val bool) {
-	if s.KnownAnswers != nil {
-		//fmt.Printf("len(knownAnswers)=%d\n", len(s.KnownAnswers))
-		for _, ka := range s.KnownAnswers {
-			if ka.VarNum == v && ka.Value == val {
-				fmt.Printf("*** WTF? %d %t\n", v, val)
-			}
-		}
-	}
-}*/
 
 func up(clause *[2]uint64, v uint64, isOn bool) *[2]uint64 {
 	var idx int
@@ -541,70 +538,6 @@ func indexOfValue(clause *[2]uint64, val uint64) int {
 		}
 	}
 	return -1
-
-	// binary search
-	/*i := 0
-	min := 0
-	max := length
-	step := length - 1
-	var findVal int
-	findVal = int(val)
-	if val&0x400 == 0x400 {
-		findVal = (findVal & 0x3FF) * -1 // flip sign
-	}
-	//fmt.Printf("index-of: %b %b val:%d\n", clause[0], clause[1], findVal)
-	for {
-		// 44, 33, 22, 11 0
-		var curval int
-		if i >= 5 {
-			shift := uint(44 - ((i - 5) * 11))
-			curval = int((clause[1] >> shift) & 0x7FF)
-		} else {
-			shift := uint(44 - (i * 11))
-			curval = int((clause[0] >> shift) & 0x7FF)
-		}
-
-		if curval&0x400 == 0x400 {
-			curval = (curval & 0x3FF) * -1
-			//fmt.Printf("-- curval: %d\n", curval)
-		}
-
-		if curval == findVal {
-			return i
-		}
-
-		if curval > findVal {
-			max = i
-			i -= step
-			if i < min {
-				//fmt.Printf("i < min\n")
-				return -1
-			}
-
-			step >>= 1
-			if step == 0 && i > min {
-				step = 1
-			}
-		} else {
-			min = i
-			i += step
-			if i > max {
-				//fmt.Printf("i > max\n")
-				return -1
-			}
-
-			step >>= 1
-			if step == 0 && i < max {
-				step = 1
-			}
-		}
-
-		//fmt.Printf("- new step: %d new i: %d\n", step, i)
-		if step == 0 {
-			return -1
-		}
-	}
-	return -1*/
 }
 
 /*

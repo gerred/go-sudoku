@@ -3,7 +3,7 @@ package main
 type swordfishOperation struct {
 	blockType                    string
 	op                           containerOperator
-	op_inverted                  containerOperator
+	opInverted                   containerOperator
 	nextContainer                func(int) int
 	doesOverlap                  func(x int, y int) bool
 	isInSameDimension            func(x int, y int) bool
@@ -21,9 +21,9 @@ func (b *board) SolveSwordFish() error {
 	// create dimensions for looking for SwordFish in the row and column dimension
 	dims := []swordfishOperation{
 		{
-			blockType:   "row",
-			op:          b.operateOnRow,
-			op_inverted: b.operateOnColumn,
+			blockType:  "row",
+			op:         b.operateOnRow,
+			opInverted: b.operateOnColumn,
 			nextContainer: func(cur int) int {
 				// next start row index
 				next := cur + 9
@@ -65,9 +65,9 @@ func (b *board) SolveSwordFish() error {
 			},
 		},
 		{
-			blockType:   "column",
-			op:          b.operateOnColumn,
-			op_inverted: b.operateOnRow,
+			blockType:  "column",
+			op:         b.operateOnColumn,
+			opInverted: b.operateOnRow,
 			nextContainer: func(cur int) int {
 				// next start column index
 				next := cur + 1
@@ -402,7 +402,7 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 			return b.updateCandidates(target, source, ^hint)
 		}
 
-		if err := sf.op_inverted(item, removeHint); err != nil {
+		if err := sf.opInverted(item, removeHint); err != nil {
 			return err
 		}
 	}

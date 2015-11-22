@@ -60,16 +60,16 @@ func main() {
 	flags := flag.FlagSet{}
 	profile := flags.Bool("profile", false, "true profile cpu/mem")
 	runFile := flags.String("file", "", "file containing puzzle(s)")
-	max_iterations := flags.Int("max", -1, "max iterations")
-	read_stats := flags.String("readstats", "", "read stats from long run, print time taken per puzzle")
+	maxPuzzles := flags.Int("max-puzzles", -1, "max puzzles to solve when multiple present in a file")
+	readStats := flags.String("read-stats", "", "read stats from long run, print time taken per puzzle")
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 
-	_ = max_iterations
+	_ = maxPuzzles
 
-	if *read_stats != "" {
-		err := readStats(*read_stats)
+	if *readStats != "" {
+		err := readStatsFile(*readStats)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -108,7 +108,7 @@ func main() {
 	b.Print()*/
 
 	if *runFile != "" {
-		if err := runList(*runFile, *max_iterations); err != nil {
+		if err := runList(*runFile, *maxPuzzles); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -177,7 +177,7 @@ func printCompactToStandard(b string) {
 	}
 }
 
-func readStats(fileName string) error {
+func readStatsFile(fileName string) error {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -216,65 +216,38 @@ func (b *board) SolveSAT() error {
 	if err != nil {
 		return err
 	}
+
 	slns := satSolver.Solve()
 	if slns == nil || len(slns) == 0 {
 		return fmt.Errorf("could not solve with SAT %v\n", slns)
-	} else {
-		if !b.CountSolutions {
-			fmt.Printf("solved with SAT\n")
-		} else {
-			b.SolutionCount = len(slns)
-			fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
-		}
-
-		sln1 := slns[0]
-		for _, setvar := range sln1.SetVars {
-			k := int(setvar.VarNum)
-			v := setvar.Value
-			if v {
-				//fmt.Printf("%d %v\n", k, v)
-				r := k/100 - 1
-				c := (k%100)/10 - 1
-				pos := r*9 + c
-				if b.solved[pos] == 0 {
-					val := k % 10
-					//fmt.Printf("r:%d c:%d val:%d\n", r, c, val)
-					b.SolvePositionNoValidate(pos, uint(val))
-				}
-			}
-		}
-		//b.SolveNakedSingle()
 	}
 
-	/*if !b.isSolved() {
-		b.changed = true
-		for b.changed {
-			b.changed = false
-			b.SolveNakedSingle()
-			b.SolveHiddenSingle()
+	if !b.CountSolutions {
+		fmt.Printf("solved with SAT\n")
+	} else {
+		b.SolutionCount = len(slns)
+		fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
+	}
+
+	sln1 := slns[0]
+	for _, setvar := range sln1.SetVars {
+		k := int(setvar.VarNum)
+		v := setvar.Value
+		if v {
+			r := k/100 - 1
+			c := (k%100)/10 - 1
+			pos := r*9 + c
+			if b.solved[pos] == 0 {
+				val := k % 10
+				b.SolvePositionNoValidate(pos, uint(val))
+			}
 		}
-	}*/
+	}
 
 	err = b.Validate()
 	if err != nil {
 		return err
 	}
-
-	/*var vars []int
-
-	for _, item := range satSolver.SetVars {
-		vars = append(vars, int(item.VarNum))
-	}
-
-	sort.Ints(vars)
-
-	for _, v := range vars {
-		for _, item := range satSolver.SetVars {
-			if v == int(item.VarNum) {
-				fmt.Printf("%d %t\n", item.VarNum, item.Value)
-			}
-		}
-	}*/
 
 	return nil
 }
@@ -307,7 +280,7 @@ func runFile(fileName string) {
 	}
 }
 
-func runList(fileName string, max_iterations int) error {
+func runList(fileName string, maxPuzzles int) error {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -318,7 +291,7 @@ func runList(fileName string, max_iterations int) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; line != "" && (max_iterations == -1 || i < max_iterations); i++ {
+	for i := 0; line != "" && (maxPuzzles == -1 || i < maxPuzzles); i++ {
 		fmt.Printf("----------------\nPuzzle # %d\n", i+1)
 		start1 := time.Now()
 		board, err := loadBoard([]byte(line))
@@ -340,14 +313,14 @@ func runList(fileName string, max_iterations int) error {
 			board.PrintHints()
 			board.PrintURL()
 			return fmt.Errorf("could not solve Puzzle # %d\n", i+1)
-		} else {
-			board.Print()
-			fmt.Printf("Solve time: %v\n", time.Since(start1))
 		}
+
+		board.Print()
+		fmt.Printf("Solve time: %v\n", time.Since(start1))
 
 		line, err = r.ReadString('\n')
 		if err != nil {
-			// TODO: EOF error shoudl just break
+			// TODO: EOF error should just break
 			return err
 		}
 	}
