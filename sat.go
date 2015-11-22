@@ -13,6 +13,14 @@ const lenMask = 0xF800000000000000
 const len1 = 0x800000000000000
 const len2 = 0x1000000000000000
 
+const shiftInterval = uint(11)
+const initialShift = uint(44)
+const lenShift = uint(59)
+
+const signMask = 0x400
+const signedValMask = 0x7FF
+const absValMask = 0x3FF
+
 var satisfied = &[2]uint64{0xFF, 0xFF}
 
 // SAT represents a list of clauses. When solved, the SetVars field
@@ -146,21 +154,21 @@ func NewSAT(input string, findMultipleSolutions bool, maxSolutions int) (*SAT, e
 
 func intArrayToBin(list []int) [2]uint64 {
 	var bin [2]uint64
-	bin[0] = uint64(len(list)) << 59
+	bin[0] = uint64(len(list)) << lenShift
 	j := 0
-	shift := uint(44)
+	shift := initialShift
 	for i := 0; i < len(list); i++ {
 		val := abs(list[i])
 		if list[i] < 0 {
-			val |= 0x400 // add sign
+			val |= signMask // add sign
 		}
 		bin[j] |= uint64(val << shift)
 
 		if shift == 0 {
-			shift = 44
+			shift = initialShift
 			j++
 		} else {
-			shift -= 11
+			shift -= shiftInterval
 		}
 	}
 	return bin
@@ -204,16 +212,16 @@ func abs(x int) int {
 	vars := make(map[int]interface{})
 
 	for _, clause := range s.Clauses {
-		length := int(clause[0]&lenMask) >> 59
+		length := int(clause[0]&lenMask) >> lenShift
 		if length == 0 {
 			continue
 		}
-		shift := uint(44)
+		shift := initialShift
 		cur := clause[0]
 		for i := 0; i < length; i++ {
-			curval := (cur >> shift) & 0x7FF
-			neg := (curval & 0x400) == 0x400
-			curval &= 0x3FF
+			curval := (cur >> shift) & signedValMask
+			neg := (curval & signMask) == signMask
+			curval &= absValMask
 
 			var val int
 			val = int(curval)
@@ -223,10 +231,10 @@ func abs(x int) int {
 			vars[val] = struct{}{}
 
 			if shift == 0 {
-				shift = 44
+				shift = initialShift
 				cur = clause[1]
 			} else {
-				shift -= 11
+				shift -= shiftInterval
 			}
 		}
 	}
@@ -240,19 +248,6 @@ func abs(x int) int {
 }*/
 
 func (s *SAT) getAllSingleVarClauses() []SetVar {
-	/*check := make(map[uint64]struct{})
-	for _, clause := range s.Clauses {
-		c := clause[0]
-		length := c & lenMask
-		if length == len1 {
-			if _, ok := check[c]; !ok {
-				continue
-			}
-			check[c] = struct{}{}
-		}
-	}*/
-
-	//list := make([]SetVar, len(check))
 	check := make(map[uint64]struct{})
 	var list []SetVar
 	var val uint64
@@ -262,13 +257,11 @@ func (s *SAT) getAllSingleVarClauses() []SetVar {
 		c := clause[0]
 		length := c & lenMask
 		if length == len1 {
-			val = c >> 44
-			on = (val&0x400 == 0)
-			val = val & 0x3FF
+			val = c >> initialShift
+			on = (val&signMask == 0)
+			val = val & absValMask
 
 			if _, ok := check[c]; !ok {
-				/*delete(check, c)
-				list = append(list, SetVar{VarNum: val, Value: on})*/
 				continue
 			}
 			check[c] = struct{}{}
@@ -286,9 +279,9 @@ func (s *SAT) getNextSingleVar() (*uint64, *bool) {
 	for _, clause := range s.Clauses {
 		length := clause[0] & lenMask
 		if length == len1 {
-			val = clause[0] >> 44
-			on := (val&0x400 == 0)
-			val = val & 0x3FF
+			val = clause[0] >> initialShift
+			on := (val&signMask == 0)
+			val = val & absValMask
 
 			return &val, &on
 		}
@@ -308,13 +301,13 @@ func (s *SAT) getNextVar() (*uint64, *bool) {
 	for _, clause := range s.Clauses {
 		length := clause[0] & lenMask
 		if length == len2 {
-			val = (clause[0] >> 44) & 0x3FF
+			val = (clause[0] >> initialShift) & absValMask
 			return &val, nil
 		}
 	}
 
 	// let's try the first variable from the first clause
-	val = (s.Clauses[0][0] >> 44) & 0x3FF
+	val = (s.Clauses[0][0] >> initialShift) & absValMask
 	return &val, nil
 }
 
@@ -463,7 +456,7 @@ func up(clause *[2]uint64, v uint64, isOn bool) *[2]uint64 {
 				return satisfied
 			}
 			clause = cut(clause, idx)
-		} else if idx = indexOfValue(clause, v|0x400); idx != -1 {
+		} else if idx = indexOfValue(clause, v|signMask); idx != -1 {
 			if !isOn {
 				return satisfied
 			}
@@ -485,56 +478,56 @@ func cut(clause *[2]uint64, idx int) *[2]uint64 {
 
 	var newClause [2]uint64
 
-	length := int((clause[0] & lenMask) >> 59)
-	newClause[0] = uint64(length-1) << 59
+	length := int((clause[0] & lenMask) >> lenShift)
+	newClause[0] = uint64(length-1) << lenShift
 
-	shift := uint(44)
-	shift2 := uint(44)
+	shift := initialShift
+	shift2 := initialShift
 	j, k := 0, 0
 	cur := clause[0]
 	for i := 0; i < length; i++ {
 		if i != idx {
-			curval := (cur >> shift) & 0x7FF
+			curval := (cur >> shift) & signedValMask
 			newClause[k] |= curval << shift2
 
 			if shift2 == 0 {
-				shift2 = 44
+				shift2 = initialShift
 				k++
 			} else {
-				shift2 -= 11
+				shift2 -= shiftInterval
 			}
 		}
 
 		if shift == 0 {
-			shift = 44
+			shift = initialShift
 			j++
 			cur = clause[j]
 		} else {
-			shift -= 11
+			shift -= shiftInterval
 		}
 	}
 	return &newClause
 }
 
 func indexOfValue(clause *[2]uint64, val uint64) int {
-	length := int((clause[0] & lenMask) >> 59)
+	length := int((clause[0] & lenMask) >> lenShift)
 	if length == 0 {
 		return -1
 	}
 
-	shift := uint(44)
+	shift := initialShift
 	cur := clause[0]
 	for i := 0; i < length; i++ {
-		curval := (cur >> shift) & 0x7FF
+		curval := (cur >> shift) & signedValMask
 		if curval == val {
 			return i
 		}
 
 		if shift == 0 {
-			shift = 44
+			shift = initialShift
 			cur = clause[1]
 		} else {
-			shift -= 11
+			shift -= shiftInterval
 		}
 	}
 	return -1
@@ -543,20 +536,20 @@ func indexOfValue(clause *[2]uint64, val uint64) int {
 /*
 // debug function
 func clauseToIntArray(clause [2]uint64) []int {
-	length := int((clause[0] & lenMask) >> 59)
+	length := int((clause[0] & lenMask) >> lenShift)
 	if length == 0 {
 		return []int{}
 	}
 
 	var list []int
 
-	shift := uint(44)
+	shift := initialShift
 	cur := clause[0]
 	for i := 0; i < length; i++ {
-		curval := (cur >> shift) & 0x7FF
+		curval := (cur >> shift) & signedValMask
 
-		on := curval&0x400 == 0
-		curval &= 0x3FF
+		on := curval&signMask == 0
+		curval &= absValMask
 		if !on {
 			curval = -curval
 		}
@@ -564,10 +557,10 @@ func clauseToIntArray(clause [2]uint64) []int {
 		list = append(list, int(curval))
 
 		if shift == 0 {
-			shift = 44
+			shift = initialShift
 			cur = clause[1]
 		} else {
-			shift -= 11
+			shift -= shiftInterval
 		}
 	}
 
