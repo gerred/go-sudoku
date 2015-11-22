@@ -199,7 +199,6 @@ func (b *board) getSAT() string {
 	}
 
 	header := fmt.Sprintf("p cnf %d %d", 9*9*9, clauses)
-	//fmt.Printf("%s\n", header)
 	input := fmt.Sprintf("%s\n%s%s%s", header, singlebuf, longbuf, buf)
 	//ioutil.WriteFile("sat.cnf", []byte(input), 0644)
 	return input

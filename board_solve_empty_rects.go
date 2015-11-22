@@ -71,6 +71,7 @@ func (b *board) SolveEmptyRectangles() error {
 
 	// find a candidate box
 	prevBox := -1
+	b.changed = false // TODO: it'd be nice to get a changed notification from updateCandidates
 	for i := 0; i < 81; i += 3 {
 		c1 := getCoords(i)
 

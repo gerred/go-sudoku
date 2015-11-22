@@ -20,6 +20,8 @@ func init() {
 
 func main() {
 
+	var err error
+
 	/*puzzles := bytes.Buffer{}
 
 	for i := 174; i > 0; i-- {
@@ -76,7 +78,9 @@ func main() {
 
 	start := time.Now()
 	if *profile {
-		startProfile()
+		if err = startProfile(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	//printCompactToStandard("080009743050008010010000000800005000000804000000300006000000070030500080972400050")
@@ -104,7 +108,9 @@ func main() {
 	b.Print()*/
 
 	if *runFile != "" {
-		runList(*runFile, *max_iterations)
+		if err := runList(*runFile, *max_iterations); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	//start := time.Now()
@@ -119,28 +125,38 @@ func main() {
 	//generate()
 
 	if *profile {
-		stopProfile()
+		if err := stopProfile(); err != nil {
+			log.Fatal(err)
+		}
 	}
 	fmt.Printf("%v\n", time.Since(start))
 }
 
-func startProfile() {
+func startProfile() error {
 	f, err := os.Create("go-sudoku.pprof")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	pprof.StartCPUProfile(f)
+	if err = pprof.StartCPUProfile(f); err != nil {
+		return err
+	}
+	return nil
 }
 
-func stopProfile() {
-	f2, err := os.Create("go-sudoku.mprof")
+func stopProfile() error {
+	f, err := os.Create("go-sudoku.mprof")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	pprof.WriteHeapProfile(f2)
-	f2.Close()
+	defer f.Close()
+
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		return err
+	}
 
 	pprof.StopCPUProfile()
+
+	return nil
 }
 
 func printCompactToStandard(b string) {
@@ -168,9 +184,14 @@ func readStats(fileName string) error {
 	}
 	defer f.Close()
 
+	const prefix = "Solve time: "
+
 	r := bufio.NewReader(f)
 	line, err := r.ReadString('\n')
-	const prefix = "Solve time: "
+	if err != nil {
+		return err
+	}
+
 	puzzle := 1
 	for line != "" && err == nil {
 		if strings.HasPrefix(line, prefix) {
@@ -182,7 +203,9 @@ func readStats(fileName string) error {
 			fmt.Printf("%d\t%v\n", puzzle, d.Nanoseconds()/int64(time.Millisecond))
 			puzzle++
 		}
-		line, err = r.ReadString('\n')
+		if line, err = r.ReadString('\n'); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -284,24 +307,24 @@ func runFile(fileName string) {
 	}
 }
 
-func runList(fileName string, max_iterations int) {
+func runList(fileName string, max_iterations int) error {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		fmt.Printf("ERROR - %s\n", err)
-		return
+		return err
 	}
 
 	r := bufio.NewReader(bytes.NewReader(b))
-	line, _ := r.ReadString('\n')
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return err
+	}
 	for i := 0; line != "" && (max_iterations == -1 || i < max_iterations); i++ {
 		fmt.Printf("----------------\nPuzzle # %d\n", i+1)
 		start1 := time.Now()
 		board, err := loadBoard([]byte(line))
-		board.PrintURL()
 		if err != nil {
 			board.PrintHints()
-			fmt.Printf("ERROR - %d - %s\n", i+1, err)
-			return
+			return fmt.Errorf("%s. Puzzle #: %d", err, i+1)
 		}
 
 		if err = board.Solve(); err != nil {
@@ -310,26 +333,23 @@ func runList(fileName string, max_iterations int) {
 			if err2 != nil {
 				b2.PrintURL()
 			}
-			fmt.Printf("ERROR - %s\n", err)
-			return
+			return fmt.Errorf("%s. Puzzle # %d", err, i+1)
 		}
-
-		/*if err = board.Solve(); err != nil {
-			board.PrintHints()
-			fmt.Printf("ERROR - %d - %s\n", i+1, err)
-			return
-		}*/
 
 		if !board.isSolved() {
 			board.PrintHints()
 			board.PrintURL()
-			fmt.Printf("could not solve - %d\n", i+1)
-			break
+			return fmt.Errorf("could not solve Puzzle # %d\n", i+1)
 		} else {
 			board.Print()
 			fmt.Printf("Solve time: %v\n", time.Since(start1))
 		}
 
-		line, _ = r.ReadString('\n')
+		line, err = r.ReadString('\n')
+		if err != nil {
+			// TODO: EOF error shoudl just break
+			return err
+		}
 	}
+	return nil
 }

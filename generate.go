@@ -158,7 +158,9 @@ func digHoles(b *board) error {
 	fmt.Printf("hint count: %d\n", b2.numSolved())
 	b2.CountSolutions = true
 	b2.MaxSolutions = 2
-	b2.Solve()
+	if err = b2.Solve(); err != nil {
+		return err
+	}
 	fmt.Printf("sln count: %d\n", b2.SolutionCount)
 	//b2.PrintHints()
 	b2.Print()

@@ -87,16 +87,15 @@ func TestEmptyRects3(t *testing.T) {
 	}
 
 	b.SkipSAT = true
-	b.SolveWithSolversList(b.getSimpleSolvers())
-
-	//b.PrintHints()
+	if err = b.SolveWithSolversList(b.getSimpleSolvers()); err != nil {
+		t.Fatal(err)
+	}
 
 	// check board is in expected initial state
 	testHint(t, b, 4, 8, []uint{2, 4, 6, 9})
 	testHint(t, b, 7, 2, []uint{3, 6, 8})
 
 	// act
-	b.changed = false
 	if err = b.SolveEmptyRectangles(); err != nil {
 		t.Fatal(err)
 	}
@@ -173,21 +172,30 @@ func testHint(t *testing.T, b *board, row, col int, hints []uint) {
 
 func loadBoardWithHints(t *testing.T, hintBoard string) (b *board) {
 	// read the text board, apply hints
+	var err error
 	sr := strings.NewReader(hintBoard)
 	r := bufio.NewReader(sr)
 
 	// skip header
 	for i := 0; i < 4; i++ {
-		r.ReadString('\n')
+		if _, err = r.ReadString('\n'); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	b = &board{}
-
+	var line string
 	for i := 0; i < 9; i++ {
-		line, _ := r.ReadString('\n')
-		if strings.HasPrefix(line, "|---|") {
-			line, _ = r.ReadString('\n')
+		if line, err = r.ReadString('\n'); err != nil {
+			t.Fatal(err)
 		}
+
+		if strings.HasPrefix(line, "|---|") {
+			if line, err = r.ReadString('\n'); err != nil {
+				t.Fatal(err)
+			}
+		}
+
 		line = strings.Replace(line, "\r", "", -1)
 		line = strings.Replace(line, "\n", "", -1)
 		line = line[6 : len(line)-2]
@@ -206,12 +214,18 @@ func loadBoardWithHints(t *testing.T, hintBoard string) (b *board) {
 				// get hints
 				hints := strings.Split(cell[1:len(cell)-1], ",")
 				for _, hint := range hints {
-					val, _ := strconv.Atoi(hint)
+					val, err := strconv.Atoi(hint)
+					if err != nil {
+						t.Fatal(err)
+					}
 					b.blits[pos] |= 1 << uint(val-1)
 				}
 			} else {
 				// solved cell
-				val, _ := strconv.Atoi(cell)
+				val, err := strconv.Atoi(cell)
+				if err != nil {
+					t.Fatal(err)
+				}
 				b.solved[pos] = uint(val)
 				b.blits[pos] = 1 << uint(val-1)
 			}
@@ -262,9 +276,9 @@ func TestBoards(t *testing.T) {
 			t.Fatalf("%s: %s", file, err)
 			return
 		}
-		//board.PrintURL()
 
 		if err = board.Solve(); err != nil {
+			board.PrintHints()
 			t.Fatalf("%s: %s", file, err)
 			return
 		}
@@ -277,28 +291,6 @@ func TestBoards(t *testing.T) {
 		}
 	}
 	fmt.Printf("solved %d puzzles\n", len(files))
-}
-
-func Test29(t *testing.T) {
-	file := "./test_files/29_ben.txt"
-	board, err := getBoard(file)
-	if err != nil {
-		t.Fatalf("%s: %s", file, err)
-		return
-	}
-	//board.PrintURL()
-
-	if err = board.Solve(); err != nil {
-		t.Fatalf("%s: %s", file, err)
-		return
-	}
-	//board.PrintHints()
-	//board.PrintURL()
-
-	if !board.isSolved() {
-		t.Fatalf("%s: could not solve", file)
-		return
-	}
 }
 
 func getKnownAnswer(t *testing.T, answer string) *[81]byte {

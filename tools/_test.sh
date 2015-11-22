@@ -1,6 +1,3 @@
-echo "Copying files from ./vendor to ${GOPATH//\\//}/src..."
-cp vendor/. -r -u $GOPATH/src
-
 FILES=$(ls *.go)
 
 echo "Checking gofmt..."
@@ -11,8 +8,8 @@ if [ -n "${fmtRes}" ]; then
 fi
 
 echo "Checking errcheck..."
-errRes=$(./tools/errcheck -blank -ignore 'os:Close,Remove,io:Close')
-#errRes=$(./tools/errcheck -blank -ignoretests) # TODO: update errcheck
+# buffer.WriteString always returns nil error; panics if buffer too large
+errRes=$(./tools/errcheck -blank -ignore 'WriteString,os:Close')
 # TODO: add -asserts (maybe)
 if [ $? -ne 0 ]; then
 	echo -e "errcheck checking failed:\n${errRes}"
