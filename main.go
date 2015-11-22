@@ -196,8 +196,8 @@ func readStats(fileName string) error {
 	for line != "" && err == nil {
 		if strings.HasPrefix(line, prefix) {
 			line = strings.Trim(line[len(prefix):], " \n\r")
-			d, err := time.ParseDuration(line)
-			if err != nil {
+			var d time.Duration
+			if d, err = time.ParseDuration(line); err != nil {
 				return err
 			}
 			fmt.Printf("%d\t%v\n", puzzle, d.Nanoseconds()/int64(time.Millisecond))
