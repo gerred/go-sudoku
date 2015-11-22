@@ -8,10 +8,10 @@ import (
 func TestSetsAreEqual(t *testing.T) {
 	// arrange
 	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{}, []int{}},
+		{{1, 2, 3}, {4, 5, 6}},
+		{{1, 2, 3}, {3, 2, 1}},
+		{{1, 2, 3}, {2, 2, 4}},
+		{{}, {}},
 	}
 
 	expecteds := []bool{
@@ -40,17 +40,17 @@ func TestSetsAreEqual(t *testing.T) {
 func TestUnion(t *testing.T) {
 	// arrange
 	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
+		{{1, 2, 3}, {4, 5, 6}},
+		{{1, 2, 3}, {3, 2, 1}},
+		{{1, 2, 3}, {2, 2, 4}},
+		{{1, 2, 3}, {3, 4, 5}},
 	}
 
 	expecteds := [][]int{
-		[]int{1, 2, 3, 4, 5, 6},
-		[]int{1, 2, 3},
-		[]int{1, 2, 3, 4},
-		[]int{1, 2, 3, 4, 5},
+		{1, 2, 3, 4, 5, 6},
+		{1, 2, 3},
+		{1, 2, 3, 4},
+		{1, 2, 3, 4, 5},
 	}
 
 	// act
@@ -72,17 +72,17 @@ func TestUnion(t *testing.T) {
 func TestIntersect(t *testing.T) {
 	// arrange
 	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
+		{{1, 2, 3}, {4, 5, 6}},
+		{{1, 2, 3}, {3, 2, 1}},
+		{{1, 2, 3}, {2, 2, 4}},
+		{{1, 2, 3}, {3, 4, 5}},
 	}
 
 	expecteds := [][]int{
-		[]int{},
-		[]int{1, 2, 3},
-		[]int{2},
-		[]int{3},
+		{},
+		{1, 2, 3},
+		{2},
+		{3},
 	}
 
 	// act
@@ -107,17 +107,17 @@ func TestIntersect(t *testing.T) {
 func TestSubtract(t *testing.T) {
 	// arrange
 	inputs := [][][]int{
-		[][]int{[]int{1, 2, 3}, []int{4, 5, 6}},
-		[][]int{[]int{1, 2, 3}, []int{3, 2, 1}},
-		[][]int{[]int{1, 2, 3}, []int{2, 2, 4}},
-		[][]int{[]int{1, 2, 3}, []int{3, 4, 5}},
+		{{1, 2, 3}, {4, 5, 6}},
+		{{1, 2, 3}, {3, 2, 1}},
+		{{1, 2, 3}, {2, 2, 4}},
+		{{1, 2, 3}, {3, 4, 5}},
 	}
 
 	expecteds := [][]int{
-		[]int{1, 2, 3},
-		[]int{},
-		[]int{1, 3},
-		[]int{1, 2},
+		{1, 2, 3},
+		{},
+		{1, 3},
+		{1, 2},
 	}
 
 	// act

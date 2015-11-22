@@ -31,19 +31,19 @@ func TestSolve(t *testing.T) {
 
 	expecteds := [][][]SetVar{
 		// (a ∨ ¬b) ∧ (a ∨ b) should return a: True, b: anything
-		[][]SetVar{
-			[]SetVar{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: false}},
-			[]SetVar{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: true}},
+		{
+			{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: false}},
+			{SetVar{VarNum: 1, Value: true}, SetVar{VarNum: 2, Value: true}},
 		},
 		// (a ∧ b) ∧ (a ∧ ¬b) should return: null
 		nil,
 		// (a ∧ b) ∧ (¬b ∨ c) should return: a: True, b: True, c: True.
-		[][]SetVar{
-			[]SetVar{SetVar{VarNum: 3, Value: true}, SetVar{VarNum: 2, Value: true}, SetVar{VarNum: 1, Value: true}},
+		{
+			{SetVar{VarNum: 3, Value: true}, SetVar{VarNum: 2, Value: true}, SetVar{VarNum: 1, Value: true}},
 		},
 		// (x ∨ x ∨ y) ∧ (¬x ∨ ¬y ∨ ¬y) ∧ (¬x ∨ y ∨ y) x: False, y: True
-		[][]SetVar{
-			[]SetVar{SetVar{VarNum: 1, Value: false}, SetVar{VarNum: 2, Value: true}},
+		{
+			{SetVar{VarNum: 1, Value: false}, SetVar{VarNum: 2, Value: true}},
 		},
 	}
 

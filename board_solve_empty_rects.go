@@ -15,15 +15,15 @@ func init() {
 	// 18 19 20
 
 	checkRects = []rectForm{
-		rectForm{intersectOffset: 0, cornerOffsets: []int{10, 11, 19, 20}},
-		rectForm{intersectOffset: 1, cornerOffsets: []int{9, 11, 18, 20}},
-		rectForm{intersectOffset: 2, cornerOffsets: []int{9, 10, 18, 19}},
-		rectForm{intersectOffset: 9, cornerOffsets: []int{1, 2, 19, 20}},
-		rectForm{intersectOffset: 10, cornerOffsets: []int{0, 2, 18, 20}},
-		rectForm{intersectOffset: 11, cornerOffsets: []int{0, 1, 18, 19}},
-		rectForm{intersectOffset: 18, cornerOffsets: []int{1, 2, 10, 11}},
-		rectForm{intersectOffset: 19, cornerOffsets: []int{0, 2, 9, 11}},
-		rectForm{intersectOffset: 20, cornerOffsets: []int{0, 1, 9, 10}},
+		{intersectOffset: 0, cornerOffsets: []int{10, 11, 19, 20}},
+		{intersectOffset: 1, cornerOffsets: []int{9, 11, 18, 20}},
+		{intersectOffset: 2, cornerOffsets: []int{9, 10, 18, 19}},
+		{intersectOffset: 9, cornerOffsets: []int{1, 2, 19, 20}},
+		{intersectOffset: 10, cornerOffsets: []int{0, 2, 18, 20}},
+		{intersectOffset: 11, cornerOffsets: []int{0, 1, 18, 19}},
+		{intersectOffset: 18, cornerOffsets: []int{1, 2, 10, 11}},
+		{intersectOffset: 19, cornerOffsets: []int{0, 2, 9, 11}},
+		{intersectOffset: 20, cornerOffsets: []int{0, 1, 9, 10}},
 	}
 }
 
