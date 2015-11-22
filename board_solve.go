@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func (b *board) Solve() error {
+func (b *board) SolveWithSolversList(solvers []solver) error {
 	// first iteration naked single
 	b.loading = true // turn off logging, this run is boring
 
@@ -21,11 +21,15 @@ func (b *board) Solve() error {
 
 	b.loading = false
 
-	if err := b.runSolvers(b.getSolvers()); err != nil {
+	if err := b.runSolvers(solvers); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (b *board) Solve() error {
+	return b.SolveWithSolversList(b.getSolvers())
 }
 
 type solver struct {
@@ -33,6 +37,25 @@ type solver struct {
 	name        string
 	printBoard  bool
 	safetyCheck bool
+}
+
+func (b *board) getSimpleSolvers() []solver {
+	solvers := []solver{
+		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
+		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
+		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
+		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
+		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
+		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)},
+		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
+		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
+		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)},
+		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
+		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
+		{name: "BOX LINE", run: b.SolveBoxLine},
+	}
+
+	return solvers
 }
 
 func (b *board) getSolvers() []solver {
@@ -54,6 +77,7 @@ func (b *board) getSolvers() []solver {
 		{name: "Y-WING", run: b.SolveYWing},
 		{name: "SWORDFISH", run: b.SolveSwordFish},
 		{name: "XY-CHAIN", run: b.SolveXYChain},
+		{name: "EMPTY RECTANGLES", run: b.SolveEmptyRectangles},
 	}
 
 	return solvers

@@ -8,7 +8,109 @@ import (
 	"testing"
 )
 
-func TestXYChain(t *testing.T) {
+func TestEmptyRects(t *testing.T) {
+	// arrange
+	board := `400103000080507420900040005139000500270910040804730912592080000748350290000279854`
+
+	b, err := loadBoard([]byte(board))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b.PrintHints()
+
+	// check board is in expected initial state
+	testHint(t, b, 3, 8, []uint{6, 7, 8})
+
+	// act
+	b.changed = false
+	if err = b.SolveEmptyRectangles(); err != nil {
+		t.Fatal(err)
+	}
+
+	// assert
+	if !b.changed {
+		t.Fatal("board not changed")
+	}
+
+	b.PrintHints()
+
+	testHint(t, b, 3, 8, []uint{7, 8})
+}
+
+func TestEmptyRects2(t *testing.T) {
+	// arrange
+	hintBoard := `
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+|r,c|               0               1               2 |               3               4               5 |               6               7               8 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 0 |           (2,5)       (1,2,6,7)               8 |               4         (2,5,7)       (2,5,6,9) |       (1,2,6,9)               3           (1,9) |
+| 1 |         (2,4,5)       (1,2,6,7)         (1,4,7) |               3         (2,5,7)       (2,5,6,9) |     (1,2,6,8,9)       (1,6,8,9)         (1,8,9) |
+| 2 |               9         (2,3,6)         (2,3,6) |         (2,6,8)           (2,8)               1 |               5               7               4 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 3 |               7               9       (2,3,5,6) |       (1,2,5,6)     (1,2,3,4,5)               8 |         (1,3,6)         (1,4,6)           (1,3) |
+| 4 |         (2,3,8)       (2,3,6,8)         (2,3,6) |         (1,2,6)       (1,2,3,4)               7 |       (1,3,6,9)       (1,4,6,9)               5 |
+| 5 |               1               4         (3,5,6) |               9           (3,5)         (3,5,6) |           (7,8)               2           (7,8) |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| 6 |         (3,4,8)       (1,3,7,8)               9 |       (1,5,7,8)               6         (3,4,5) |       (1,3,7,8)           (1,8)               2 |
+| 7 |               6               5           (1,7) |       (1,2,7,8)       (1,2,3,8)           (2,3) |               4         (1,8,9)     (1,3,7,8,9) |
+| 8 |       (2,3,4,8)     (1,2,3,7,8)         (1,4,7) |         (1,7,8)               9           (3,4) |       (1,3,7,8)               5               6 |
+|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+`
+
+	b := loadBoardWithHints(t, hintBoard)
+
+	// check board is in expected initial state
+	testHint(t, b, 4, 1, []uint{2, 3, 6, 8})
+
+	// act
+	b.changed = false
+	if err := b.SolveEmptyRectangles(); err != nil {
+		t.Fatal(err)
+	}
+
+	// assert
+	testHint(t, b, 4, 1, []uint{2, 3, 6, 8})
+
+	if b.changed {
+		t.Fatal("board changed, no empty-rectangle options here")
+	}
+}
+
+func TestEmptyRects3(t *testing.T) {
+	// arrange
+	board := `750960320000702050000030047970050083005070100180000075240090710010407000097016030`
+
+	b, err := loadBoard([]byte(board))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b.SkipSAT = true
+	b.SolveWithSolversList(b.getSimpleSolvers())
+
+	b.PrintHints()
+
+	// check board is in expected initial state
+	testHint(t, b, 4, 8, []uint{2, 4, 6, 9})
+	testHint(t, b, 7, 2, []uint{3, 6, 8})
+
+	// act
+	b.changed = false
+	if err = b.SolveEmptyRectangles(); err != nil {
+		t.Fatal(err)
+	}
+
+	// assert
+	if !b.changed {
+		t.Fatal("board not changed")
+	}
+
+	//testHint(t, b, 3, 8, []uint{7, 8})
+
+}
+
+func testXYChain(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -118,7 +220,7 @@ func loadBoardWithHints(t *testing.T, hintBoard string) (b *board) {
 	return b
 }
 
-func TestBoards(t *testing.T) {
+func testBoards(t *testing.T) {
 	files := []string{
 		"./test_files/input.txt",
 		"./test_files/01_naked_single_493382.txt",
@@ -176,7 +278,7 @@ func TestBoards(t *testing.T) {
 	fmt.Printf("solved %d puzzles\n", len(files))
 }
 
-func Test29(t *testing.T) {
+func test29(t *testing.T) {
 	file := "./test_files/29_ben.txt"
 	board, err := getBoard(file)
 	if err != nil {
@@ -211,7 +313,7 @@ func getKnownAnswer(t *testing.T, answer string) *[81]byte {
 	return &ka
 }
 
-func Test13329(t *testing.T) {
+func test13329(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
@@ -268,7 +370,7 @@ func Test13329(t *testing.T) {
 	// TODO
 }
 
-func TestXWing(t *testing.T) {
+func testXWing(t *testing.T) {
 	// arrange
 	hintBoard := `
 |---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
