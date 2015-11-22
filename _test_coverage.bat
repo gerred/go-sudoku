@@ -1,1 +1,1 @@
-sh ./tools/_test_coverage.sh
+sh ./_test_coverage.sh

@@ -1,1 +1,1 @@
-sh ./tools/_test.sh
+sh ./_test.sh
