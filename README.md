@@ -37,30 +37,30 @@ Run `go-sudoku -help` for a full list of optional arguments.
 
 ## Strategies
 
-| Difficulty | Name               | Argument        | Brief Description
-|------------|--------------------|-----------------|-------------------------
-| Basic      |                    |                 |
-|            | Naked Singles      | `n1`            | A cell has only one hint left; it can be solved with this hint.
-|            | Hidden Singles     | `h1`            | A cell is the only one in a row, column, or box with a given hint and can be solved with this hint.
-| Easy       |                    |                 |
-|            | Naked Pairs        | `n2`            |
-|            | Naked Triples      | `n3`            |
-|            | Naked Quads        | `n4`            |
-|            | Naked Quints       | `n5`            |
-|            | Hidden Pairs       | `h2`            |
-|            | Hidden Triples     | `h3`            |
-|            | Hidden Quads       | `h4`            |
-|            | Hidden Quints      | `h5`            |
-| Moderate   |                    |                 |
-|            | Pointing Pairs     | `pointing-pair` |
-|            | Box/Line Reduction | `box-line`      |
-|            | X-Wing             | `xwing`         |
-| Tough      |                    |                 |
-|            | Simple Coloring    | `simple-color`  |
-|            | Y-Wing             | `ywing`         |
-|            | Sword-Fish         | `swordfish`     |
-|            | XY-Chain           | `xychain`       |
-|            | Empty Rectangles   | `empty-rect`    |
+| Name               | Argument        | Brief Description
+|--------------------|-----------------|-------------------------
+| **Basic**          |                 |
+| Naked Singles      | `n1`            | A cell has only one hint left; it can be solved with this hint.
+| Hidden Singles     | `h1`            | A cell is the only one in a row, column, or box with a given hint.
+| **Easy**           |                 |
+| Naked Pairs        | `n2`            |
+| Naked Triples      | `n3`            |
+| Naked Quads        | `n4`            |
+| Naked Quints       | `n5`            |
+| Hidden Pairs       | `h2`            |
+| Hidden Triples     | `h3`            |
+| Hidden Quads       | `h4`            |
+| Hidden Quints      | `h5`            |
+| **Moderate**       |                 |
+| Pointing Pairs     | `pointing-pair` |
+| Box/Line Reduction | `box-line`      |
+| X-Wing             | `xwing`         |
+| **Tough**          |                 |
+| Simple Coloring    | `simple-color`  |
+| Y-Wing             | `ywing`         |
+| Sword-Fish         | `swordfish`     |
+| XY-Chain           | `xychain`       |
+| Empty Rectangles   | `empty-rect`    |
 
 Note:
 - Difficulties are based on listings at [sudokiwiki.org](http://www.sudokuwiki.org/sudoku.htm).
