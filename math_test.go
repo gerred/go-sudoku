@@ -5,38 +5,6 @@ import (
 	"testing"
 )
 
-func TestSetsAreEqual(t *testing.T) {
-	// arrange
-	inputs := [][][]int{
-		{{1, 2, 3}, {4, 5, 6}},
-		{{1, 2, 3}, {3, 2, 1}},
-		{{1, 2, 3}, {2, 2, 4}},
-		{{}, {}},
-	}
-
-	expecteds := []bool{
-		false,
-		true,
-		false,
-		true,
-	}
-
-	// act
-	var actuals []bool
-	for _, input := range inputs {
-		actual := setsAreEqual(input[0], input[1])
-		actuals = append(actuals, actual)
-	}
-
-	// assert
-	for i, expected := range expecteds {
-		actual := actuals[i]
-		if expected != actual {
-			t.Fatalf("inputs: %v expected: %v actual: %v", inputs[i], expected, actual)
-		}
-	}
-}
-
 func TestUnion(t *testing.T) {
 	// arrange
 	inputs := [][][]int{

@@ -185,16 +185,6 @@ func getIntArray(values []string, sortValues bool, trimEnd bool) ([]int, error) 
 	return list, nil
 }
 
-func abs(x int) int {
-	switch {
-	case x < 0:
-		return -x
-	case x == 0:
-		return 0 // return correctly abs(-0)
-	}
-	return x
-}
-
 /*func (s *sat) getRemainingVars() []int {
 	vars := make(map[int]interface{})
 

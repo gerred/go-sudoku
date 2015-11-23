@@ -34,7 +34,6 @@ func (b *board) SolveHiddenSingle() error {
 
 			if HasSingleBit(leftOver) {
 				val := GetSingleBitValue(leftOver)
-				//fmt.Printf("op-it:%d c:%#2v h:%09b sh:%09b ^sh:%09b lo:%b\n", opIt, getCoords(i), blit, sumBlits, ^sumBlits&0x1FF, leftOver)
 				if err := b.SolvePosition(i, val); err != nil {
 					return err
 				}

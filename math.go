@@ -1,19 +1,5 @@
 package main
 
-func setsAreEqual(a []int, b []int) bool {
-	store := make(map[int]interface{})
-	for _, val := range a {
-		store[val] = struct{}{}
-	}
-	for _, val := range b {
-		if _, ok := store[val]; !ok {
-			return false
-		}
-		delete(store, val)
-	}
-	return true
-}
-
 func intersect(a []int, b []int) []int {
 	store := make(map[int]interface{})
 	var list []int
@@ -63,4 +49,14 @@ func subtract(a []int, b []int) []int {
 	}
 
 	return list
+}
+
+func abs(x int) int {
+	switch {
+	case x < 0:
+		return -x
+	case x == 0:
+		return 0 // return correctly abs(-0)
+	}
+	return x
 }
