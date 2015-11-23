@@ -86,16 +86,27 @@ func main() {
 	}
 
 	start := time.Now()
+	defer func() {
+		if *printTime {
+			fmt.Printf("%v\n", time.Since(start))
+		}
+	}()
 
 	var b *board
 	if b, err = loadBoard(boardBytes); err != nil {
+		if _, ok := err.(ErrUnsolvable); ok {
+			fmt.Println("UNSOLVABLE")
+			return
+		}
 		log.Fatal(err)
 	}
 
 	if err = b.Solve(); err != nil {
-		// TODO: checking for a specific type of error would be ideal
-		fmt.Printf("UNSOLVABLE")
-		return
+		if _, ok := err.(ErrUnsolvable); ok {
+			fmt.Println("UNSOLVABLE")
+			return
+		}
+		log.Fatal(err)
 	}
 
 	b.Print()
@@ -106,10 +117,6 @@ func main() {
 		if err := stopProfile(); err != nil {
 			log.Fatal(err)
 		}
-	}
-
-	if *printTime {
-		fmt.Printf("%v\n", time.Since(start))
 	}
 }
 

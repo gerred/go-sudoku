@@ -33,28 +33,8 @@ func (b *board) Solve() error {
 }
 
 type solver struct {
-	run        func() error
-	name       string
-	printBoard bool
-}
-
-func (b *board) getSimpleSolvers() []solver {
-	solvers := []solver{
-		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
-		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
-		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
-		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
-		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
-		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)},
-		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
-		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
-		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)},
-		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
-		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
-		{name: "BOX LINE", run: b.SolveBoxLine},
-	}
-
-	return solvers
+	run  func() error
+	name string
 }
 
 func (b *board) getSolvers() []solver {
@@ -96,40 +76,14 @@ mainLoop:
 	for !b.isSolved() {
 		b.changed = false
 		for _, solver := range solvers {
-			if solver.printBoard {
-				b.PrintHints()
-				b.PrintCompact()
-			}
-
 			if b.verbose {
 				b.Log(false, -1, solver.name)
 			}
 
 			if err := solver.run(); err != nil {
-				return err
+				return NewErrUnsolvable(err.Error())
 			}
 			if b.changed {
-				/*if solver.safetyCheck && testBoard != nil {
-					for i := 0; i < 81; i++ {
-						if b.blits[i]&testBoard.blits[i] != testBoard.blits[i] {
-							fmt.Printf("-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/\n")
-							fmt.Printf("%#2v\n", getCoords(i))
-							fmt.Printf("%09b\n", b.blits[i])
-							fmt.Printf("%09b\n", testBoard.blits[i])
-							b.PrintHints()
-							testBoard.Print()
-							fmt.Printf("-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/\n")
-							return fmt.Errorf("error at %#v", getCoords(i))
-						}
-					}
-					testBoard, _ = TrialAndError(*b)
-				}*/
-
-				if solver.printBoard || b.verbose {
-					b.PrintHints()
-					b.PrintCompact()
-				}
-
 				continue mainLoop
 			}
 			if b.isSolved() {
@@ -138,29 +92,14 @@ mainLoop:
 		}
 
 		if !b.isSolved() && !b.SkipSAT {
-			//b.Log(false, -1, "Starting SAT solver...")
-			//start := time.Now()
 			err := b.SolveSAT()
-			//fmt.Printf("sat time: %v\n", time.Since(start))
 			if err != nil {
-				return err
+				return NewErrUnsolvable(err.Error())
 			}
 		}
 
-		/*newBoard, err := TrialAndError(*b)
-		if err != nil {
-			return err
-		}
-		if newBoard == nil {
-			return fmt.Errorf("board has no solution")
-		}
-
-		b.solved = newBoard.solved
-		b.blits = newBoard.blits*/
 		break
 	}
-
-	//fmt.Println("--- END SOLVER")
 
 	return nil
 }
@@ -185,8 +124,8 @@ func (b *board) SolvePositionNoValidate(pos int, val uint) {
 
 func (b *board) SolvePosition(pos int, val uint) error {
 	mask := uint(^(1 << (val - 1)))
-	if b.solved[pos] != 0 /*&& b.solved[pos] != val*/ {
-		return fmt.Errorf("pos %d has value %d, tried to set with %d", pos, b.solved[pos], val)
+	if b.solved[pos] != 0 {
+		return NewErrUnsolvable("pos %d has value %d, tried to set with %d", pos, b.solved[pos], val)
 	}
 	b.solved[pos] = val
 	b.blits[pos] = 1 << (val - 1)
@@ -196,11 +135,11 @@ func (b *board) SolvePosition(pos int, val uint) error {
 	}
 
 	if err := b.Validate(); err != nil {
-		return fmt.Errorf("%#v val:%d - %s", getCoords(pos), val, err)
+		return NewErrUnsolvable("%#v val:%d - %s", getCoords(pos), val, err)
 	}
 
 	if err := b.operateOnRCB(pos, b.removeCandidates(mask)); err != nil {
-		return err
+		return NewErrUnsolvable(err.Error())
 	}
 
 	if !b.loading && b.verbose {
@@ -228,7 +167,7 @@ func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error 
 	if newBlit != oldBlit {
 		b.changed = true
 		if newBlit == 0 {
-			return fmt.Errorf("tried to remove last candidate from %#2v", getCoords(targetPos))
+			return NewErrUnsolvable("tried to remove last candidate from %#2v", getCoords(targetPos))
 		}
 
 		b.blits[targetPos] = newBlit

@@ -11,12 +11,12 @@ import (
 )
 
 type board struct {
-	solved         [81]uint
-	blits          [81]uint
-	loading        bool
-	changed        bool
-	verbose        bool
-	knownAnswer    *[81]byte
+	solved  [81]uint
+	blits   [81]uint
+	loading bool
+	changed bool
+	verbose bool
+	//knownAnswer    *[81]byte
 	SkipSAT        bool
 	CountSolutions bool
 	SolutionCount  int
@@ -120,8 +120,14 @@ func readBoard(rd io.Reader) ([]byte, error) {
 	if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
 		return nil, err
 	}
+	line = strings.Trim(line, "\r\n")
+
+	// small deviation from spec, accept compact 81-char format
+	if len(line) == 81 {
+		return []byte(line), nil
+	}
+
 	for i := 0; i < 9; i++ {
-		line = strings.Trim(line, "\r\n")
 		if len(line) != 17 {
 			return nil, fmt.Errorf("line %d: expected: len=17, actual: len=%d. line: %q", i+1, len(line), line)
 		}
@@ -145,6 +151,7 @@ func readBoard(rd io.Reader) ([]byte, error) {
 		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
 			return nil, err
 		}
+		line = strings.Trim(line, "\r\n")
 	}
 
 	return buf.Bytes(), nil

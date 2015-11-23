@@ -420,3 +420,22 @@ func TestXWing(t *testing.T) {
 
 	// TODO... maybe. unicorn advises against it.
 }
+
+func (b *board) getSimpleSolvers() []solver {
+	solvers := []solver{
+		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
+		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
+		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
+		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
+		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
+		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)},
+		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
+		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
+		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)},
+		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
+		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
+		{name: "BOX LINE", run: b.SolveBoxLine},
+	}
+
+	return solvers
+}

@@ -15,10 +15,10 @@ func (b *board) Validate() error {
 			blit |= b.blits[r]
 		}
 		if err := validate(rowVals); err != nil {
-			return err
+			return NewErrUnsolvable("row error %#2v %s", getCoords(pos), err.Error())
 		}
 		if !b.loading && blit != 0x1FF {
-			return fmt.Errorf("row missing hint %#2v %09b", getCoords(pos), blit)
+			return NewErrUnsolvable("row missing hint %#2v %09b", getCoords(pos), blit)
 		}
 
 		// validate column
@@ -31,10 +31,10 @@ func (b *board) Validate() error {
 			blit |= b.blits[c]
 		}
 		if err := validate(colVals); err != nil {
-			return err
+			return NewErrUnsolvable("col error %#2v %s", getCoords(pos), err.Error())
 		}
 		if !b.loading && blit != 0x1FF {
-			return fmt.Errorf("col missing hint %#2v %09b", getCoords(pos), blit)
+			return NewErrUnsolvable("col missing hint %#2v %09b", getCoords(pos), blit)
 		}
 
 		// validate box
@@ -51,17 +51,18 @@ func (b *board) Validate() error {
 			}
 		}
 		if err := validate(boxVals); err != nil {
-			return err
+			return NewErrUnsolvable("box error %#2v %s", getCoords(pos), err.Error())
 		}
 		if !b.loading && blit != 0x1FF {
-			return fmt.Errorf("box missing hint %#2v %09b", getCoords(pos), blit)
+			return NewErrUnsolvable("box missing hint %#2v %09b", getCoords(pos), blit)
 		}
 	}
 
-	return b.ValidateKnownAnswer()
+	return nil
+	//	return b.ValidateKnownAnswer()
 }
 
-func (b *board) ValidateKnownAnswer() error {
+/*func (b *board) ValidateKnownAnswer() error {
 	if b.knownAnswer == nil {
 		return nil
 	}
@@ -83,11 +84,11 @@ func (b *board) ValidateKnownAnswer() error {
 	}
 
 	return nil
-}
+}*/
 
 func validate(vals []uint) error {
 	if len(vals) != 9 {
-		return fmt.Errorf("len(vals) = %d", len(vals))
+		return fmt.Errorf("len(vals), expected: 9, actual = %d", len(vals))
 	}
 
 	avail := 0x1FF
@@ -99,7 +100,7 @@ func validate(vals []uint) error {
 		mask := 1 << (v - 1)
 
 		if avail&mask != mask {
-			return fmt.Errorf("val %d repeated", v)
+			return NewErrUnsolvable("val %d repeated", v)
 		}
 		avail &= ^mask
 	}
