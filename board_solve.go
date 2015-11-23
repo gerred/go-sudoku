@@ -126,15 +126,13 @@ func (b *board) SolvePositionWithLog(technique, logFormat string, pos int, val u
 	mask := uint(^(1 << (val - 1)))
 
 	logFormat += fmt.Sprintf(" solved: %d/81", b.numSolved()+1)
-	logged := false
 	removeCandidates := func(target int, source int) error {
 		logEntry, opErr := b.updateCandidates(target, mask)
 		if opErr != nil {
 			return opErr
 		}
 
-		if logEntry != nil && technique != "" {
-			logged = true
+		if logEntry != nil {
 			b.AddLog(technique, logEntry, logFormat)
 		}
 		return nil
