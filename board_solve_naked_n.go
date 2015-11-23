@@ -11,7 +11,7 @@ func (b *board) SolveNakedN(n int) error {
 	// from the rest of the cells in common.
 	// http://planetsudoku.com/how-to/sudoku-naked-triple.html
 	// http://planetsudoku.com/how-to/sudoku-naked-quad.html
-	const techniqueFormat = "NAKED %s"
+	const techniqueFormat = "NAKED-%s"
 
 	if n < 2 || n > 5 {
 		return fmt.Errorf("n must be between [2,5], actual=%d", n)

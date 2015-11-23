@@ -95,7 +95,7 @@ func main() {
 	} else {
 		// read compact board(s) from file
 		start = time.Now()
-		if err := runList(*runFile, *maxPuzzles, *showSolveTime); err != nil {
+		if err := runList(*runFile, *maxPuzzles, *showSolveTime, *showSteps); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -134,45 +134,6 @@ func readStatsFile(fileName string) error {
 	return nil
 }
 
-func (b *board) SolveSAT() error {
-	satInput := b.getSAT()
-	satSolver, err := NewSAT(satInput, b.countSolutions, b.maxSolutions)
-	if err != nil {
-		return err
-	}
-
-	slns := satSolver.Solve()
-	if slns == nil || len(slns) == 0 {
-		return NewErrUnsolvable("could not solve with SAT %v")
-	}
-
-	if b.countSolutions {
-		b.solutionCount = len(slns)
-	}
-
-	sln1 := slns[0]
-	for _, setvar := range sln1.SetVars {
-		k := int(setvar.VarNum)
-		v := setvar.Value
-		if v {
-			r := k/100 - 1
-			c := (k%100)/10 - 1
-			pos := r*9 + c
-			if b.solved[pos] == 0 {
-				val := k % 10
-				b.SolvePositionNoValidate(pos, uint(val))
-			}
-		}
-	}
-
-	err = b.Validate()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func runFile(fileName string) {
 	board, err := getBoard(fileName)
 	if err != nil {
@@ -194,7 +155,7 @@ func runFile(fileName string) {
 	}
 }
 
-func runList(fileName string, maxPuzzles int, showSolveTime bool) error {
+func runList(fileName string, maxPuzzles int, showSolveTime, showSteps bool) error {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -206,6 +167,11 @@ func runList(fileName string, maxPuzzles int, showSolveTime bool) error {
 		return err
 	}
 	for i := 0; line != "" && (maxPuzzles == -1 || i < maxPuzzles); i++ {
+		firstLog = true
+		logLastStepReducedHints = false
+		logLastBoardWithHints = ""
+		logLastHeader = ""
+
 		fmt.Printf("-----------------\nPuzzle # %d:\n", i+1)
 		start1 := time.Now()
 		board, err := loadBoard([]byte(line))
@@ -215,6 +181,8 @@ func runList(fileName string, maxPuzzles int, showSolveTime bool) error {
 			}
 			return fmt.Errorf("puz=%d err=%q", i+1, err)
 		}
+
+		board.showSteps = showSteps
 
 		if err = board.Solve(); err != nil {
 			fmt.Printf("%s\n", line)

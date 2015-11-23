@@ -65,6 +65,7 @@ func (b *board) SolveEmptyRectangles() error {
 	// http://www.sudokuwiki.org/Empty_Rectangles
 
 	const technique = "EMPTY RECTANGLES"
+	const logFormat = "ERI: %v strong link 1: %v strong link 2: %v target corner: %v hint: %v"
 
 	// find a candidate box
 	prevBox := -1
@@ -216,8 +217,13 @@ func (b *board) SolveEmptyRectangles() error {
 							}
 
 							if logEntry != nil {
-								// i+form.intersectOffset
-								// TODO: do something with logEntry
+								var args []interface{}
+								args = append(args, i+form.intersectOffset)
+								args = append(args, rowCand)
+								args = append(args, links[0])
+								args = append(args, target)
+								args = append(args, hint)
+								b.AddLog(technique, logEntry, logFormat, args...)
 							}
 						}
 					}
@@ -242,8 +248,13 @@ func (b *board) SolveEmptyRectangles() error {
 							}
 
 							if logEntry != nil {
-								// i+form.intersectOffset
-								// TODO: do something with logEntry
+								var args []interface{}
+								args = append(args, i+form.intersectOffset)
+								args = append(args, colCand)
+								args = append(args, links[0])
+								args = append(args, target)
+								args = append(args, hint)
+								b.AddLog(technique, logEntry, logFormat, args...)
 							}
 						}
 					}

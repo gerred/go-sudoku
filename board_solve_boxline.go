@@ -6,6 +6,7 @@ func (b *board) SolveBoxLine() error {
 	// in the same BOX.
 	// http://planetsudoku.com/how-to/sudoku-box-line.html
 	const technique = "BOX-LINE"
+	const logFormat = "%s %s are in a shared box and are the only cell(s) with hint %s in their %s outside their box"
 
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
@@ -44,18 +45,21 @@ func (b *board) SolveBoxLine() error {
 			pickList  []int
 			op        containerOperator
 			canRemove func(int) bool
+			name      string
 		}{
 			// rows
 			{
 				pickList:  rowPickList,
 				op:        b.operateOnRow,
 				canRemove: func(target int) bool { return coords.row != getCoords(target).row },
+				name:      "row",
 			},
 			// columns
 			{
 				pickList:  colPickList,
 				op:        b.operateOnColumn,
 				canRemove: func(target int) bool { return coords.col != getCoords(target).col },
+				name:      "column",
 			},
 		}
 
@@ -98,7 +102,7 @@ func (b *board) SolveBoxLine() error {
 								}
 
 								if logEntry != nil {
-									b.AddLog(technique, logEntry, "%s,%s are only cells in shared box with hint %s", i, item, hint)
+									b.AddLog(technique, logEntry, logFormat, i, item, hint, dim.name)
 								}
 								return nil
 							}

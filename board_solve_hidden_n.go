@@ -61,7 +61,7 @@ func (b *board) SolveHiddenN(n int) error {
 }
 
 func (b *board) checkHiddenPermutations(n int, source int, op containerOperator, lists [][]int) error {
-	const techniqueFormat = "HIDDEN %s"
+	const techniqueFormat = "HIDDEN-%s"
 
 	var err error
 	var logEntry *updateLog
