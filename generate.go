@@ -191,7 +191,6 @@ func (b *board) getHints(pos int) (uint, error) {
 	}
 
 	if err := b.operateOnRCB(pos, removeHints); err != nil {
-		// TODO: return err
 		return 0, err
 	}
 

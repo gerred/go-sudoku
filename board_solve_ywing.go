@@ -65,7 +65,7 @@ func (b *board) SolveYWing() error {
 
 		for _, wings := range wingsList {
 			if len(wings) != 2 {
-				// TODO: len(wings) should always be 2, being defensive
+				// NOTE: len(wings) should always be 2, being defensive
 				continue
 			}
 
@@ -79,28 +79,17 @@ func (b *board) SolveYWing() error {
 
 			removeHint := sum & ^blit
 
-			/*var once1 sync.Once
-			print1 := func() {
-				fmt.Printf("* %#2v %s\n", getCoords(i), GetString(blit))
-				fmt.Printf("wing set %d:\n", idx+1)
-				fmt.Printf("-- %#2v %s\n", getCoords(wings[0]), GetString(b.blits[wings[0]]))
-				fmt.Printf("-- %#2v %s\n", getCoords(wings[1]), GetString(b.blits[wings[1]]))
-				fmt.Printf("-- remove hint: %d\n", GetSingleBitValue(removeHint))
-				fmt.Printf("-- targets:\n")
-			}*/
-
 			updated := false
 			for _, target := range targets {
 				if target == i || target == wings[0] || target == wings[1] {
 					continue
 				}
-				/*once1.Do(print1)
-				fmt.Printf("---- %#2v %s\n", getCoords(target), GetString(b.blits[target]))*/
+
 				if b.blits[target]&removeHint == removeHint {
-					updated = true
 					if err := b.updateCandidates(target, i, ^removeHint); err != nil {
 						return err
 					}
+					updated = b.changed
 				}
 			}
 			if updated {

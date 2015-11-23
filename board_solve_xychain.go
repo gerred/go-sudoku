@@ -26,19 +26,6 @@ func (b *board) SolveXYChain() error {
 	return nil
 }
 
-// itemBlit&^excludeBit&firstBitInChain
-// 5,9 - 5
-// 5,1 - 1
-// 1,9 - 9 // odd, has to fit original hint
-// 19&^1=9
-
-// 5,9 - 5
-// 5,1 - 1
-// 1,9 - 9
-// 1,9 - 1 // even, has to fit original hint
-
-// leftover has to fit original hint
-
 func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 	hint := excludeBit
 	lists := b.xyChainFollow([]int{i}, excludeBit, hint, 1)
@@ -52,23 +39,10 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 			continue
 		}
 
-		/*var once1 sync.Once
-		print1 := func() {
-			fmt.Printf("-/- %#v hint:%d\n", list, GetSingleBitValue(hint))
-			for idx, chainItem := range list {
-				fmt.Printf("--- chaind %d: %#2v %s\n", idx, getCoords(chainItem), GetString(b.blits[chainItem]))
-			}
-			fmt.Printf("----- targets:\n")
-			for _, target := range targets {
-				fmt.Printf("----- %#2v %s\n", getCoords(target), GetString(b.blits[target]))
-			}
-		}*/
-
 		updated := false
 	targetLoop:
 		for _, target := range targets {
 			// items in the chain aren't candidates (but why not? shouldn't the logic hold? TODO)
-			//once1.Do(print1)
 			for _, chainItem := range list {
 				if target == chainItem {
 					continue targetLoop
@@ -77,10 +51,10 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 
 			targetBlit := b.blits[target]
 			if targetBlit&hint == hint {
-				updated = true
 				if err := b.updateCandidates(target, i, ^hint); err != nil {
 					return false, err
 				}
+				updated = b.changed
 			}
 		}
 
@@ -95,7 +69,6 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 func (b *board) xyChainFollow(chain []int, excludeBit uint, firstBitInChain uint, depth int) [][]int {
 	var lists [][]int
 
-	//firstBlit := b.blits[chain[0]]
 	curPos := chain[len(chain)-1]
 	curBlit := b.blits[curPos]
 
@@ -125,13 +98,7 @@ loopVisible:
 		return lists
 	}
 
-	/*if len(chain) == 1 {
-		fmt.Printf("* %#2v %s\n", getCoords(curPos), GetString(curBlit))
-	}*/
-
-	//prefix := strings.Repeat("-", depth+1)
 	for _, item := range filtered {
-		//fmt.Printf("%s %#2v %s\n", prefix, getCoords(item), GetString(b.blits[item]))
 		itemBlit := b.blits[item]
 
 		var newChain []int
@@ -142,15 +109,6 @@ loopVisible:
 
 		if len(chain) > 1 {
 			if itemBlit&^nextExcludeBit&firstBitInChain == firstBitInChain {
-				/*itemCoords := getCoords(item)
-				fmt.Printf("**** r,c:               %d,%d\n", itemCoords.row, itemCoords.col)
-				fmt.Printf("**** first bit:         %09b %d\n", firstBitInChain, GetSingleBitValue(firstBitInChain))
-				fmt.Printf("**** item blit:         %09b\n", itemBlit)
-				fmt.Printf("**** next exclude bit:  %09b %d\n", nextExcludeBit, GetSingleBitValue(nextExcludeBit))
-				fmt.Printf("**** ^exclude bit:      %09b\n", ^nextExcludeBit&0x1FF)
-				fmt.Printf("**** itemBlit&^exclude: %09b\n", itemBlit&^nextExcludeBit)
-				fmt.Printf("**** test:              %09b\n", itemBlit&^nextExcludeBit&firstBitInChain)*/
-
 				// TODO: should we keep going? there may be longer chains
 				lists = append(lists, newChain)
 				continue

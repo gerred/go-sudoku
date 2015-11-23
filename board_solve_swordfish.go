@@ -112,20 +112,8 @@ func (b *board) SolveSwordFish() error {
 
 	for _, dim := range dims {
 
-		// TODO: DEBUG, remove
-		/*if dim.blockType != "column" {
-			continue
-		}*/
-		// END debug
-
 		for i := 0; i != -1; i = dim.nextContainer(i) {
 			// i = start of row/column
-
-			// TODO: debug, remove
-			/*if i != 2 {
-				continue
-			}*/
-			// END debug
 
 			// hint, list of positions
 			initialCandidates := make(map[uint][]int)
@@ -159,72 +147,19 @@ func (b *board) SolveSwordFish() error {
 				continue
 			}
 
-			//fmt.Printf("%#v\n", candidatePerms)
-
 			for hint, v := range candidatePerms {
-				// TODO: REMOVE, debug
-				/*if hint != 1 {
-					continue
-				}*/
-				// END debug
-
-				/*var once1 sync.Once
-				print1 := func() {
-					fmt.Printf("-----------------------------------------\n")
-					fmt.Printf("swordfish: dim:%s num:%d\n", dim.blockType, bits.GetSingleBitValue(hint))
-				}*/
-
 				for _, c := range v {
-					// TODO: DEBUG, remove
-					/*if !reflect.DeepEqual(c, []int{2, 11}) {
-						continue
-					}
-					fmt.Println("GOT IT")*/
-					// END debug
-
-					/*var once2 sync.Once
-					print2 := func() {
-						once1.Do(print1)
-						fmt.Printf("\n")
-						fmt.Printf("-- top level:\n")
-					}*/
-
 					sfPerms, err := b.swordfishGetPermutations(dim, c, hint, i)
 					if err != nil {
 						return err
 					}
 
-					/*var once3 sync.Once
-					print3 := func() {
-						once2.Do(print2)
-						for _, pick := range c {
-							fmt.Printf("-- %#2v %s\n", getCoords(pick), bits.GetString(b.blits[pick]))
-						}
-					}*/
-
 					for _, x := range sfPerms {
-						// TODO: DEBUG, remove
-						/*if !reflect.DeepEqual(x, []int{3, 12, 30}) {
-							continue
-						}*/
-						// END debug
-
-						/*var once4 sync.Once
-						print4 := func() {
-							once3.Do(print3)
-							fmt.Printf("---- second level:\n")
-							for _, pos := range x {
-								fmt.Printf("---- %#2v %s\n", getCoords(pos), bits.GetString(b.blits[pos]))
-							}
-						}*/
-
 						// combine first and second level to get new 'one must overlap' set
 						// (in this case, two must overlap...)
 						var overlapSet []int
 						overlapSet = append(overlapSet, c...)
 						overlapSet = append(overlapSet, x...)
-
-						//fmt.Printf("%#v\n", overlapSet)
 
 						nextPos := dim.getMaxPosFromOverlapSet(overlapSet)
 						sfPerms2, err := b.swordfishGetPermutations(dim, overlapSet, hint, nextPos)
@@ -233,19 +168,7 @@ func (b *board) SolveSwordFish() error {
 						}
 
 						if len(sfPerms2) != 0 {
-							//once4.Do(print4)
 							for _, y := range sfPerms2 {
-								// TODO: DEBUG, remove
-								/*if !reflect.DeepEqual(y, []int{16, 34}) {
-									continue
-								}*/
-								// END debug
-
-								/*fmt.Printf("------ third level:\n")
-								for _, pos := range y {
-									fmt.Printf("------ %#2v %s\n", getCoords(pos), bits.GetString(b.blits[pos]))
-								}*/
-
 								// Here we go...
 								// if we pulled sets from columns, given a hint, remove that hint
 								// from all cells in the superset of ROWS covered by our swordfish
@@ -258,7 +181,6 @@ func (b *board) SolveSwordFish() error {
 								}
 								if b.changed {
 									// try simpler techniques before re-trying swordfish
-									//fmt.Println("**** we did it!")
 									return nil
 								}
 							}
@@ -297,16 +219,6 @@ func (b *board) swordfishGetPermutations(dim swordfishOperation, mustOverlap []i
 	}
 
 	tmpPerms := swordfishGetTwosAndThrees(candidates)
-
-	// TODO: debug, look for dupes between mustOverlap and tmpPerms
-	/*fmt.Printf("--------------------\n")
-	fmt.Printf("blockType:   %s\n", dim.blockType)
-	fmt.Printf("mustOverlap: %#2v\n", mustOverlap)
-	fmt.Printf("tmpPerms:    %#2v\n", tmpPerms)
-	fmt.Printf("pos:         %d\n", pos)
-	fmt.Printf("nextPos:     %d\n", nextPos)
-	fmt.Printf("--------------------\n")*/
-	// END debug
 
 	maxMisses := dim.maxMisses(mustOverlap)
 	if maxMisses < 0 {
