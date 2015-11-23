@@ -14,7 +14,7 @@ var logLastStepReducedHints bool
 var firstLog = true
 
 func (b *board) AddLog(technique string, log *updateLog, format string, a ...interface{}) {
-	if technique == "" {
+	if !b.showSteps {
 		return
 	}
 

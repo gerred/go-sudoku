@@ -130,7 +130,7 @@ func digHoles(b *board) error {
 			b2.blits[j] = newHints
 		}
 
-		b3 := board{solved: b2.solved, blits: b2.blits, CountSolutions: true, MaxSolutions: 2}
+		b3 := board{solved: b2.solved, blits: b2.blits, countSolutions: true, maxSolutions: 2}
 		err = b3.Solve()
 		if err != nil {
 			return err
@@ -138,7 +138,7 @@ func digHoles(b *board) error {
 
 		//fmt.Printf("sln count: %d\n", b3.SolutionCount)
 
-		if b3.SolutionCount > 1 {
+		if b3.solutionCount > 1 {
 			//return fmt.Errorf("bad dig, more than 1 solution")
 			b2.solved = goodSolved
 			b2.blits = goodBlits
@@ -156,12 +156,12 @@ func digHoles(b *board) error {
 	b2.Print()
 	b2.PrintCompact()
 	fmt.Printf("hint count: %d\n", b2.numSolved())
-	b2.CountSolutions = true
-	b2.MaxSolutions = 2
+	b2.countSolutions = true
+	b2.maxSolutions = 2
 	if err = b2.Solve(); err != nil {
 		return err
 	}
-	fmt.Printf("sln count: %d\n", b2.SolutionCount)
+	fmt.Printf("sln count: %d\n", b2.solutionCount)
 	//b2.PrintHints()
 	b2.Print()
 

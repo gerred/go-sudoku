@@ -86,7 +86,6 @@ func TestEmptyRects3(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b.SkipSAT = true
 	if err = b.SolveWithSolversList(b.getSimpleSolvers()); err != nil {
 		t.Fatal(err)
 	}

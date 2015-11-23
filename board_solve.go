@@ -51,6 +51,7 @@ func (b *board) getSolvers() []solver {
 		{name: "SWORDFISH", run: b.SolveSwordFish},
 		{name: "XY-CHAIN", run: b.SolveXYChain},
 		{name: "EMPTY RECTANGLES", run: b.SolveEmptyRectangles},
+		{name: "SAT", run: b.SolveSAT},
 	}
 
 	return solvers
@@ -67,30 +68,22 @@ func (b *board) getSolverN(solver func(int) error, n int) func() error {
 
 func (b *board) runSolvers(solvers []solver) error {
 mainLoop:
-	for !b.isSolved() {
+	for {
 		b.changed = false
 		for _, solver := range solvers {
 			if err := solver.run(); err != nil {
 				return NewErrUnsolvable(err.Error())
 			}
+			if b.isSolved() {
+				return nil
+			}
 			if b.changed {
 				continue mainLoop
 			}
-			if b.isSolved() {
-				break
-			}
 		}
-
-		if !b.isSolved() && !b.SkipSAT {
-			err := b.SolveSAT()
-			if err != nil {
-				return NewErrUnsolvable(err.Error())
-			}
-		}
-
+		// for tests we may intentionally do an incomplete solve
 		break
 	}
-
 	return nil
 }
 

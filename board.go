@@ -11,16 +11,14 @@ import (
 )
 
 type board struct {
-	solved  [81]uint
-	blits   [81]uint
-	loading bool
-	changed bool
-	//verbose bool
-	//knownAnswer    *[81]byte
-	SkipSAT        bool
-	CountSolutions bool
-	SolutionCount  int
-	MaxSolutions   int
+	solved         [81]uint
+	blits          [81]uint
+	loading        bool
+	changed        bool
+	showSteps      bool
+	countSolutions bool
+	solutionCount  int
+	maxSolutions   int
 }
 
 type coords struct {
@@ -180,6 +178,10 @@ func loadBoard(b []byte) (*board, error) {
 	b = bytes.Replace(b, []byte{'\r'}, []byte{}, -1)
 	b = bytes.Replace(b, []byte{'\n'}, []byte{}, -1)
 	b = bytes.Replace(b, []byte{' '}, []byte{}, -1)
+
+	if len(b) != 81 {
+		return nil, fmt.Errorf("line needs to be 81 chars long. line: %q", string(b))
+	}
 
 	board := &board{loading: true}
 	for i := 0; i < 81; i++ {

@@ -85,3 +85,21 @@ func (b *board) GetTextBoardWithHints() string {
 
 	return buf.String()
 }
+
+func printCompactToStandard(b string) {
+	i := 0
+	for r := 0; r < 9; r++ {
+		for c := 0; c < 9; c++ {
+			if c != 0 {
+				fmt.Print(" ")
+			}
+			if b[i] == '0' {
+				fmt.Print("_")
+			} else {
+				fmt.Print(string(b[i]))
+			}
+			i++
+		}
+		fmt.Println()
+	}
+}
