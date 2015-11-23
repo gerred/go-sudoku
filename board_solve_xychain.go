@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 func (b *board) SolveXYChain() error {
 	// http://www.sudokuwiki.org/XY_Chains
 	// bi-value cells linked together by one value (and visible to each other)
@@ -59,7 +63,12 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 				}
 
 				if logEntry != nil {
-					b.AddLog(technique, logEntry, "TODO")
+					var args []interface{}
+					for _, chainItem := range list {
+						args = append(args, chainItem)
+					}
+					args = append(args, hint)
+					b.AddLog(technique, logEntry, strings.Repeat("%v ", len(list))+"hint %v", args...)
 				}
 
 				updated = b.changed

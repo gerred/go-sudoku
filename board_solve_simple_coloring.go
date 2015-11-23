@@ -1,6 +1,9 @@
 package main
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 func (b *board) SolveSimpleColoring() error {
 	const technique = "SIMPLE-COLORING"
@@ -155,7 +158,14 @@ valueLoop:
 							}
 
 							if logEntry != nil {
-								b.AddLog(technique, logEntry, "TODO")
+								var args []interface{}
+								for k := range posColor {
+									args = append(args, k)
+								}
+								args = append(args, pos0)
+								args = append(args, pos1)
+								args = append(args, hint)
+								b.AddLog(technique, logEntry, "chain="+strings.Repeat("%v ", len(posColor))+" color1=%v color2=%v hint=%v", args...)
 							}
 						}
 						return nil

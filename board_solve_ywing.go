@@ -93,12 +93,13 @@ func (b *board) SolveYWing() error {
 					}
 
 					if logEntry != nil {
-						b.AddLog(technique, logEntry, "TODO")
+						b.AddLog(technique, logEntry, "hinge=%v wing1=%v wing2=%v", i, wings[0], wings[1])
 					}
 
 					updated = b.changed
 				}
 			}
+
 			if updated {
 				// let simpler techniques take over
 				return nil

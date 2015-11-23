@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 type swordfishOperation struct {
 	blockType                    string
 	op                           containerOperator
@@ -148,18 +152,18 @@ func (b *board) SolveSwordFish() error {
 			}
 
 			for hint, v := range candidatePerms {
-				for _, c := range v {
-					sfPerms, err := b.swordfishGetPermutations(dim, c, hint, i)
+				for _, x := range v {
+					sfPerms, err := b.swordfishGetPermutations(dim, x, hint, i)
 					if err != nil {
 						return err
 					}
 
-					for _, x := range sfPerms {
+					for _, y := range sfPerms {
 						// combine first and second level to get new 'one must overlap' set
 						// (in this case, two must overlap...)
 						var overlapSet []int
-						overlapSet = append(overlapSet, c...)
 						overlapSet = append(overlapSet, x...)
+						overlapSet = append(overlapSet, y...)
 
 						nextPos := dim.getMaxPosFromOverlapSet(overlapSet)
 						sfPerms2, err := b.swordfishGetPermutations(dim, overlapSet, hint, nextPos)
@@ -168,14 +172,14 @@ func (b *board) SolveSwordFish() error {
 						}
 
 						if len(sfPerms2) != 0 {
-							for _, y := range sfPerms2 {
+							for _, z := range sfPerms2 {
 								// Here we go...
 								// if we pulled sets from columns, given a hint, remove that hint
 								// from all cells in the superset of ROWS covered by our swordfish
-								// set. still confused? me too.
+								// set. same concept applies for rows. still confused? me too.
 								// http://www.sudokuwiki.org/Sword_Fish_Strategy
 
-								err := b.swordfishApply(dim, hint, c, x, y)
+								err := b.swordfishApply(dim, hint, x, y, z)
 								if err != nil {
 									return err
 								}
@@ -319,7 +323,12 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 			}
 
 			if logEntry != nil {
-				b.AddLog(technique, logEntry, "TODO")
+				var args []interface{}
+				for _, sfSigCells := range overlap {
+					args = append(args, sfSigCells)
+				}
+				args = append(args, hint)
+				b.AddLog(technique, logEntry, strings.Repeat("%v ", len(overlap))+"hint %v", args...)
 			}
 
 			return nil

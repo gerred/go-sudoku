@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 func (b *board) SolveXWing() error {
 	const technique = "X-WING"
 
@@ -123,7 +127,12 @@ func (b *board) SolveXWing() error {
 							}
 
 							if logEntry != nil {
-								b.AddLog(technique, logEntry, "TODO")
+								var args []interface{}
+								for _, pos := range sourceList {
+									args = append(args, pos)
+								}
+								args = append(args, bit)
+								b.AddLog(technique, logEntry, strings.Repeat("%v ", len(sourceList))+"hint %v", args...)
 							}
 
 							return nil
