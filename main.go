@@ -114,6 +114,14 @@ func main() {
 		}
 	}
 
+	var b *board
+	if b, err = readBoard(os.Stdin); err != nil {
+		log.Fatal(err)
+	}
+	if err = b.Solve(); err != nil {
+		log.Fatal(err)
+	}
+
 	//start := time.Now()
 	//runFile("./test_files/29_ben.txt")
 	//runFile("./test_files/12_tough_20151107_173.txt")

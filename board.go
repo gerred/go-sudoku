@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"strconv"
+	"strings"
 )
 
 type board struct {
@@ -104,16 +109,43 @@ func (b *board) operateOnCommon(pos1 int, pos2 int, op inspector) error {
 	return nil
 }
 
-func (b *board) willUpdateCandidates(targetPos int, sourcePos int, mask uint) bool {
-	if targetPos == sourcePos || b.solved[targetPos] != 0 {
-		return false
+func readBoard(rd io.Reader) (*board, error) {
+	r := bufio.NewReader(rd)
+
+	var line string
+	var err error
+
+	buf := bytes.NewBufferString("")
+
+	if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
+		return nil, err
 	}
-	oldBlit := b.blits[targetPos]
-	newBlit := oldBlit & mask
-	if newBlit != oldBlit {
-		return true
+	for i := 0; i < 9; i++ {
+		line = strings.Trim(line, "\r\n")
+		if len(line) != 17 {
+			return nil, fmt.Errorf("line %d: expected: len=17, actual: len=%d. line: %q", i+1, len(line), line)
+		}
+
+		for j, r := range line {
+			if j%2 == 0 {
+				var v int
+				if v, err = strconv.Atoi(string(r)); err != nil || v == 0 {
+					return nil, fmt.Errorf("line %d, pos %d: expected: digit > 0 or '_', actual: %q. line: %q", i+1, j+1, r, line)
+				}
+				buf.WriteRune(r)
+			} else {
+				if r != ' ' {
+					return nil, fmt.Errorf("line %d, pos %d: expected: \" \", actual: %q. line: %q", i+1, j+1, r, line)
+				}
+			}
+		}
+
+		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
+			return nil, err
+		}
 	}
-	return false
+
+	return loadBoard(buf.Bytes())
 }
 
 func getBoard(fileName string) (*board, error) {
@@ -143,10 +175,6 @@ func loadBoard(b []byte) (*board, error) {
 			}
 		}
 	}
-
-	//board.Print()
-	//board.PrintHints()
-	//board.PrintURL()
 
 	board.loading = false
 
