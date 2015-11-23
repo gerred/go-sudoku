@@ -3,7 +3,10 @@ package main
 import "sort"
 
 func (b *board) SolveSimpleColoring() error {
-	//b.PrintHints()
+	const technique = "SIMPLE-COLORING"
+
+	var err error
+
 valueLoop:
 	for v := uint(1); v <= 9; v++ {
 		hint := uint(1 << (v - 1))
@@ -40,7 +43,7 @@ valueLoop:
 				allLinks := make(map[int]interface{})
 
 				// row
-				if err := b.operateOnRow(pos, getSingleLink); err != nil {
+				if err = b.operateOnRow(pos, getSingleLink); err != nil {
 					return err
 				}
 				if len(links) == 1 {
@@ -51,7 +54,7 @@ valueLoop:
 
 				// column
 				links = make([]int, 0)
-				if err := b.operateOnColumn(pos, getSingleLink); err != nil {
+				if err = b.operateOnColumn(pos, getSingleLink); err != nil {
 					return err
 				}
 				if len(links) == 1 {
@@ -62,7 +65,7 @@ valueLoop:
 
 				// box
 				links = make([]int, 0)
-				if err := b.operateOnBox(pos, getSingleLink); err != nil {
+				if err = b.operateOnBox(pos, getSingleLink); err != nil {
 					return err
 				}
 				if len(links) == 1 {
@@ -73,7 +76,6 @@ valueLoop:
 					// delete links if there's more than 1 in a box
 					for _, item := range links {
 						if _, ok := allLinks[item]; ok {
-							//fmt.Printf("-- delete: %#v\n", getCoords(item))
 							delete(allLinks, item)
 						}
 					}
@@ -94,7 +96,6 @@ valueLoop:
 		// it's possible to have two distinct chains with the same hint
 		for len(cellPeers) != 0 {
 			posColor := make(map[int]int)
-			//fmt.Printf("len(cellPeers) = %d, val: %d\n", len(cellPeers), bits.GetSingleBitValue(hint))
 			i := 0
 			for k, v := range cellPeers {
 				color, ok := posColor[k]
@@ -137,16 +138,6 @@ valueLoop:
 				continue
 			}
 
-			/*fmt.Printf("* color0: ")
-			for _, pos0 := range color0 {
-				fmt.Printf("%#v ", getCoords(pos0))
-			}
-			fmt.Printf("\n* color1: ")
-			for _, pos1 := range color1 {
-				fmt.Printf("%#v ", getCoords(pos1))
-			}
-			fmt.Println()*/
-
 			for _, pos0 := range color0 {
 				for _, pos1 := range color1 {
 					vis0 := b.getVisibleCellsWithHint(pos0, hint)
@@ -157,24 +148,21 @@ valueLoop:
 					both = subtract(both, color1)
 
 					if len(both) > 0 {
-						/*b.PrintHints()
-						b.PrintURL()
-						fmt.Printf("-- c0=%#v c1=%#v val=%d:\n", getCoords(pos0), getCoords(pos1), bits.GetSingleBitValue(hint))*/
 						for _, elem := range both {
-							//fmt.Printf("---- eliminate: %#v\n", getCoords(elem))
-							if err := b.updateCandidates(elem, pos0, ^hint); err != nil {
-								//fmt.Printf("%s\n", err)
+							var logEntry *updateLog
+							if logEntry, err = b.updateCandidates(elem, ^hint); err != nil {
 								return err
 							}
+
+							if logEntry != nil {
+								b.AddLog(technique, logEntry, "TODO")
+							}
 						}
-						// let simpler techniques take over
-						//fmt.Printf("return\n")
 						return nil
 					}
 				}
 			}
 		}
 	}
-	//fmt.Printf("return\n")
 	return nil
 }

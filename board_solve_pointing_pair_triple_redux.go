@@ -1,10 +1,15 @@
 package main
 
+import (
+	"strings"
+)
+
 func (b *board) SolvePointingPairAndTripleReduction() error {
 	// http://planetsudoku.com/how-to/sudoku-pointing-pair-and-triple.html
 	// "I have two or three unique HINTS within a shared box, sharing the same
 	// ROW or COLUMN. Therefore that hint cannot belong anywhere else on that
 	// ROW or COLUMN in any other BOXES".
+	const technique = "POINTING-PAIR"
 
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
@@ -40,7 +45,9 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 				return nil
 			}
 
-			if err := b.operateOnBox(i, getPickList); err != nil {
+			var err error
+
+			if err = b.operateOnBox(i, getPickList); err != nil {
 				return err
 			}
 
@@ -59,7 +66,6 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 
 					leftOver := sumBits & ^sumNegateBits
 					nbits := GetNumberOfSetBits(leftOver)
-					//if nbits != 2 && nbits != 3 {
 					if nbits == 0 || nbits > 3 {
 						continue
 					}
@@ -72,24 +78,25 @@ func (b *board) SolvePointingPairAndTripleReduction() error {
 						if testCoords.box == coords.box {
 							return nil
 						}
-						/*if b.willUpdateCandidates(target, source, ^leftOver) {
-							if !exit {
-								fmt.Printf("i: %#2v\n", coords)
-								for _, item := range list {
-									fmt.Printf(" - %#2v %09b %s\n", getCoords(item), b.blits[item], bits.GetString(b.blits[item]))
-								}
 
-								fmt.Printf(" - sum:        %09b\n", sumBits)
-								fmt.Printf(" - negate sum: %09b\n", sumNegateBits)
-								fmt.Printf(" - left over:  %09b\n", leftOver)
+						var logEntry *updateLog
+						if logEntry, err = b.updateCandidates(target, ^leftOver); err != nil {
+							return err
+						}
+
+						if logEntry != nil {
+							var args []interface{}
+							for _, item := range list {
+								args = append(args, item)
 							}
-							fmt.Printf("-> %#2v\n", testCoords)
-							exit = true
-						}*/
-						return b.updateCandidates(target, source, ^leftOver)
+							args = append(args, leftOver)
+							b.AddLog(technique, logEntry, strings.Repeat("%v ", len(list))+"have unique hint(s) %v within their box", args...)
+						}
+
+						return nil
 					}
 
-					if err := dim.op(i, removeHints); err != nil {
+					if err = dim.op(i, removeHints); err != nil {
 						return err
 					}
 				}

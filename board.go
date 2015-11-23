@@ -15,7 +15,7 @@ type board struct {
 	blits   [81]uint
 	loading bool
 	changed bool
-	verbose bool
+	//verbose bool
 	//knownAnswer    *[81]byte
 	SkipSAT        bool
 	CountSolutions bool
@@ -39,6 +39,21 @@ func getCoords(pos int) coords {
 	box := boxRow*3 + boxCol
 
 	return coords{row: pos / 9, col: pos % 9, box: box, pos: pos}
+}
+
+func (c coords) String() string {
+	return fmt.Sprintf("%c%c", getTextRow(c.row), getTextCol(c.col))
+}
+
+func getTextRow(row int) int {
+	if row == 8 {
+		return 'J' // the letter "I" is skipped
+	}
+	return 'A' + row
+}
+
+func getTextCol(col int) int {
+	return '1' + col
 }
 
 func (b *board) operateOnRow(pos int, op inspector) error {
@@ -117,17 +132,17 @@ func readBoard(rd io.Reader) ([]byte, error) {
 
 	buf := bytes.NewBufferString("")
 
-	if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
-		return nil, err
-	}
-	line = strings.Trim(line, "\r\n")
-
-	// small deviation from spec, accept compact 81-char format
-	if len(line) == 81 {
-		return []byte(line), nil
-	}
-
 	for i := 0; i < 9; i++ {
+		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
+			return nil, err
+		}
+		line = strings.Trim(line, "\r\n")
+
+		// small deviation from spec, accept compact 81-char format
+		if i == 0 && len(line) == 81 {
+			return []byte(line), nil
+		}
+
 		if len(line) != 17 {
 			return nil, fmt.Errorf("line %d: expected: len=17, actual: len=%d. line: %q", i+1, len(line), line)
 		}
@@ -147,11 +162,6 @@ func readBoard(rd io.Reader) ([]byte, error) {
 				}
 			}
 		}
-
-		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
-			return nil, err
-		}
-		line = strings.Trim(line, "\r\n")
 	}
 
 	return buf.Bytes(), nil
@@ -177,6 +187,7 @@ func loadBoard(b []byte) (*board, error) {
 	}
 
 	for i := 0; i < 81; i++ {
+		// allow _ 0 . to indicate an empty cell
 		if b[i] != '_' && b[i] != '0' && b[i] != '.' {
 			val := uint(b[i] - 48)
 			if err := board.SolvePosition(i, val); err != nil {

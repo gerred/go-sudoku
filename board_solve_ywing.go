@@ -13,6 +13,7 @@ func (b *board) SolveYWing() error {
 	// the wings can be 'seen' by the hinge
 	// the value NOT in the hinge ('C' for example) can be taken off any
 	// cells which can be seen by both wing cells
+	const technique = "Y-WING"
 
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
@@ -86,9 +87,15 @@ func (b *board) SolveYWing() error {
 				}
 
 				if b.blits[target]&removeHint == removeHint {
-					if err := b.updateCandidates(target, i, ^removeHint); err != nil {
+					logEntry, err := b.updateCandidates(target, ^removeHint)
+					if err != nil {
 						return err
 					}
+
+					if logEntry != nil {
+						b.AddLog(technique, logEntry, "TODO")
+					}
+
 					updated = b.changed
 				}
 			}

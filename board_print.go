@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 func (b *board) Print() {
 	for i := 0; i < len(b.solved); i++ {
@@ -49,47 +52,36 @@ func (b *board) PrintCompact() {
 }
 
 func (b *board) PrintHints() {
-	fmt.Printf("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n")
-	fmt.Printf("|r,c| %15d %15d %15d | %15d %15d %15d | %15d %15d %15d |\n", 0, 1, 2, 3, 4, 5, 6, 7, 8)
-	fmt.Printf("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n| 0 | ")
-	for i := 0; i < len(b.solved); i++ {
-		if b.solved[i] == 0 {
-			fmt.Printf("%15s ", fmt.Sprintf("(%s)", GetBitsString(b.blits[i])))
-		} else {
-			fmt.Printf("%15d ", b.solved[i])
-		}
-		if (i+1)%9 == 0 {
-			fmt.Printf("|\n|")
-			if (i+1)%27 == 0 {
-				fmt.Print("---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n")
-				if i != 80 {
-					fmt.Printf("| %d | ", (i+1)/9)
-				}
-			} else {
-				fmt.Printf(" %d | ", (i+1)/9)
-			}
-		} else if (i+1)%3 == 0 {
-			fmt.Print("| ")
-		}
-	}
+	fmt.Printf(b.GetTextBoardWithHints())
 }
 
-func (b *board) Log(isSolve bool, pos int, msg string) {
-	if (b.loading && isSolve) || !b.verbose {
-		return
+func (b *board) GetTextBoardWithHints() string {
+	buf := bytes.NewBufferString("")
+
+	buf.WriteString(fmt.Sprintf("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n"))
+	buf.WriteString(fmt.Sprintf("|r,c| %15d %15d %15d | %15d %15d %15d | %15d %15d %15d |\n", 1, 2, 3, 4, 5, 6, 7, 8, 9))
+	buf.WriteString(fmt.Sprintf("|---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n| A | "))
+	for i := 0; i < len(b.solved); i++ {
+		if b.solved[i] == 0 {
+			buf.WriteString(fmt.Sprintf("%15s ", fmt.Sprintf("(%s)", GetBitsString(b.blits[i]))))
+		} else {
+			buf.WriteString(fmt.Sprintf("%15d ", b.solved[i]))
+		}
+		if (i+1)%9 == 0 {
+			buf.WriteString("|\n|")
+			textRow := getTextRow((i + 1) / 9)
+			if (i+1)%27 == 0 {
+				buf.WriteString("---|-------------------------------------------------|-------------------------------------------------|-------------------------------------------------|\n")
+				if i != 80 {
+					buf.WriteString(fmt.Sprintf("| %c | ", textRow))
+				}
+			} else {
+				buf.WriteString(fmt.Sprintf(" %c | ", textRow))
+			}
+		} else if (i+1)%3 == 0 {
+			buf.WriteString("| ")
+		}
 	}
 
-	var prefix string
-	if isSolve {
-		prefix = ">"
-	} else {
-		prefix = "-"
-	}
-
-	if pos != -1 {
-		coords := getCoords(pos)
-		fmt.Printf("%s R%dC%d: %s\n", prefix, coords.row, coords.col, msg)
-	} else {
-		fmt.Printf("%s %s\n", prefix, msg)
-	}
+	return buf.String()
 }

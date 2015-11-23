@@ -1,16 +1,22 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func (b *board) SolveNakedN(n int) error {
+	// When a cell has N candidates and (N-1) other cells have combined
+	// hints equal to the N candidates, then all N candidates can be removed
+	// from the rest of the cells in common.
+	// http://planetsudoku.com/how-to/sudoku-naked-triple.html
+	// http://planetsudoku.com/how-to/sudoku-naked-quad.html
+	const techniqueFormat = "NAKED %s"
+
 	if n < 2 || n > 5 {
 		return fmt.Errorf("n must be between [2,5], actual=%d", n)
 	}
-	// When a cell has N candidates and (N-1) others combined equal
-	// the N candidates, then all N candidates can be removed from
-	// the other cells in common.
-	// http://planetsudoku.com/how-to/sudoku-naked-triple.html
-	// http://planetsudoku.com/how-to/sudoku-naked-quad.html
+
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
 			continue
@@ -25,6 +31,8 @@ func (b *board) SolveNakedN(n int) error {
 			b.operateOnBox,
 		}
 
+		var err error
+
 		for _, op := range ops {
 			var pickList []int
 			addToPickList := func(target int, source int) error {
@@ -35,7 +43,7 @@ func (b *board) SolveNakedN(n int) error {
 				return nil
 			}
 
-			if err := op(i, addToPickList); err != nil {
+			if err = op(i, addToPickList); err != nil {
 				return err
 			}
 
@@ -61,10 +69,25 @@ func (b *board) SolveNakedN(n int) error {
 						}
 					}
 
-					return b.updateCandidates(target, source, ^blit)
+					var logEntry *updateLog
+					if logEntry, err = b.updateCandidates(target, ^blit); err != nil {
+						return err
+					}
+
+					if logEntry != nil {
+						technique := fmt.Sprintf(techniqueFormat, numberToTechniqueWord(n))
+						var args []interface{}
+						for _, item := range list {
+							args = append(args, item)
+						}
+						args = append(args, blit)
+						b.AddLog(technique, logEntry, strings.Repeat("%v ", len(list))+"have linked hints %v", args...)
+					}
+
+					return nil
 				}
 
-				if err := op(i, removeHints); err != nil {
+				if err = op(i, removeHints); err != nil {
 					return err
 				}
 			}

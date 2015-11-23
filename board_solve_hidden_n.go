@@ -1,23 +1,30 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func (b *board) SolveHiddenN(n int) error {
 	if n < 2 || n > 5 {
 		return fmt.Errorf("n must be between [2,5], actual=%d", n)
 	}
 	// If there are N unique hints in N cells within one container,
-	// then no other hints could be valid within that container.
-	// http://planetsudoku.com/how-to/sudoku-hidden-triple.html
-	// Triple example:
-	// - N = 3,4,7,8
-	// - X = 1,4,5,6,8
-	// - Y = 4,5,6,7
-	// - Other cells contain 1,3,4,5
-	// Algo:
-	// - bits.GetNumberOfSetBits(N | X | Y) >= 3
-	// - bits.GetNumberOfSetBits((N | X | Y) & ^(O1 | O2 | O3 ...) == 3
-	// - N,X,Y can &= ^(sum), removing 1,4,5
+	// then no other hints could be valid within those cells.
+	// See: http://planetsudoku.com/how-to/sudoku-hidden-triple.html
+	// Triple example (from URL above):
+	// - X = 4,5,6,7
+	// - Y = 1,4,5,6,8
+	// - Z = 3,4,7,8
+	// Algorithm:
+	// - X | Y | Z = 1,3,4,5,6,7,8
+	// - bits.GetNumberOfSetBits(X | Y | Z) >= 3 (can continue)
+	// - Other cells represented by "O1, O2, O3, ..."
+	// - let sum = O1 | O2 | O3 ... = 1,2,3,4,5,9 (combined hints of other cells)
+	// - ^(sum) = 6,7,8 (hints not present in other cells)
+	// - X|Y|Z & ^sum = 011111101 & 011100000 = 011100000 = 6,7,8 (unique hints in considered cells)
+	// - bits.GetNumberOfSetBits((X | Y | Z) & ^sum) == 3 (can continue)
+	// - X,Y,Z can &= ^(sum), removing 1,3,4,5 as hints from any of the considered cells
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
 			continue
@@ -54,6 +61,11 @@ func (b *board) SolveHiddenN(n int) error {
 }
 
 func (b *board) checkHiddenPermutations(n int, source int, op containerOperator, lists [][]int) error {
+	const techniqueFormat = "HIDDEN %s"
+
+	var err error
+	var logEntry *updateLog
+
 	for _, list := range lists {
 		var sumBits uint
 		for _, pos := range list {
@@ -77,7 +89,7 @@ func (b *board) checkHiddenPermutations(n int, source int, op containerOperator,
 			return nil
 		}
 
-		if err := op(source, sumTheOthers); err != nil {
+		if err = op(source, sumTheOthers); err != nil {
 			return err
 		}
 
@@ -88,21 +100,41 @@ func (b *board) checkHiddenPermutations(n int, source int, op containerOperator,
 		leftOver := (sumBits ^ sumOthers) & sumBits
 
 		if GetNumberOfSetBits(leftOver) == uint(n) {
-			/*fmt.Printf("HIDDEN %d\n", n)
-			for _, pos := range list {
-				fmt.Printf("- %#2v %09b\n", getCoords(pos), b.blits[pos])
-			}
-			fmt.Printf("- sum:        %09b\n", sumBits)
-			fmt.Printf("- sum others: %09b\n", sumOthers)
-			fmt.Printf("- left over:  %09b\n", leftOver)*/
+			technique := fmt.Sprintf(techniqueFormat, numberToTechniqueWord(n))
 
 			for _, pos := range list {
-				if err := b.updateCandidates(pos, source, leftOver); err != nil {
+				if logEntry, err = b.updateCandidates(pos, leftOver); err != nil {
 					return err
+				}
+
+				if logEntry != nil {
+					var args []interface{}
+					for _, logPos := range list {
+						args = append(args, logPos)
+					}
+					args = append(args, leftOver)
+					b.AddLog(technique, logEntry, strings.Repeat("%v ", n)+"have unique hints %s", args...)
 				}
 			}
 		}
 	}
 
 	return nil
+}
+
+func numberToTechniqueWord(n int) string {
+	switch n {
+	case 1:
+		return "SINGLE"
+	case 2:
+		return "PAIR"
+	case 3:
+		return "TRIPLE"
+	case 4:
+		return "QUAD"
+	case 5:
+		return "QUINT"
+	}
+
+	return "???"
 }

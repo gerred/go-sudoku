@@ -5,6 +5,8 @@ func (b *board) SolveBoxLine() error {
 	// the ROW or COLUMN they share can be removed as hints from other cells
 	// in the same BOX.
 	// http://planetsudoku.com/how-to/sudoku-box-line.html
+	const technique = "BOX-LINE"
+
 	for i := 0; i < 81; i++ {
 		if b.solved[i] != 0 {
 			continue
@@ -73,6 +75,7 @@ func (b *board) SolveBoxLine() error {
 							if getCoords(target).box == coords.box {
 								return nil
 							}
+							// the shared hints must be the only ones in the shared row/col
 							if b.blits[target]&hint != 0 {
 								safeToRemove = false
 							}
@@ -89,11 +92,24 @@ func (b *board) SolveBoxLine() error {
 									return nil
 								}
 
-								return b.updateCandidates(target, i, ^hint)
+								logEntry, err := b.updateCandidates(target, ^hint)
+								if err != nil {
+									return err
+								}
+
+								if logEntry != nil {
+									b.AddLog(technique, logEntry, "%s,%s are only cells in shared box with hint %s", i, item, hint)
+								}
+								return nil
 							}
 
 							if err := b.operateOnBox(i, removeBoxLineHint); err != nil {
 								return err
+							}
+
+							if b.changed {
+								// let simpler techniques take over
+								return nil
 							}
 						}
 					}

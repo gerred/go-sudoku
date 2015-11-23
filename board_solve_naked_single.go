@@ -1,7 +1,13 @@
 package main
 
+import (
+	"fmt"
+)
+
 func (b *board) SolveNakedSingle() error {
 	// Naked Single - only hint left
+	const technique = "NAKED-SINGLE"
+
 	doLoop := true
 	for doLoop {
 		doLoop = false
@@ -17,7 +23,11 @@ func (b *board) SolveNakedSingle() error {
 
 			num := GetSingleBitValue(blit)
 
-			if err := b.SolvePosition(i, uint(num)); err != nil {
+			coords := getCoords(i)
+			logFormat := fmt.Sprintf("%s(%s) has single hint %d, changed to solution.",
+				coords, GetBitsString(b.blits[i]), num)
+
+			if err := b.SolvePositionWithLog(technique, logFormat, i, num); err != nil {
 				return err
 			}
 			doLoop = true

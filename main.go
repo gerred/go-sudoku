@@ -95,7 +95,7 @@ func main() {
 	var b *board
 	if b, err = loadBoard(boardBytes); err != nil {
 		if _, ok := err.(ErrUnsolvable); ok {
-			fmt.Println("UNSOLVABLE")
+			fmt.Printf("UNSOLVABLE\n")
 			return
 		}
 		log.Fatal(err)
@@ -103,7 +103,7 @@ func main() {
 
 	if err = b.Solve(); err != nil {
 		if _, ok := err.(ErrUnsolvable); ok {
-			fmt.Println("UNSOLVABLE")
+			fmt.Printf("UNSOLVABLE\n")
 			return
 		}
 		log.Fatal(err)
@@ -207,14 +207,11 @@ func (b *board) SolveSAT() error {
 
 	slns := satSolver.Solve()
 	if slns == nil || len(slns) == 0 {
-		return fmt.Errorf("could not solve with SAT %v\n", slns)
+		return NewErrUnsolvable("could not solve with SAT %v")
 	}
 
-	if !b.CountSolutions {
-		//fmt.Printf("solved with SAT\n")
-	} else {
+	if b.CountSolutions {
 		b.SolutionCount = len(slns)
-		//fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
 	}
 
 	sln1 := slns[0]

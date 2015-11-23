@@ -27,6 +27,8 @@ func (b *board) SolveXYChain() error {
 }
 
 func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
+	const technique = "XY-CHAIN"
+
 	hint := excludeBit
 	lists := b.xyChainFollow([]int{i}, excludeBit, hint, 1)
 	for _, list := range lists {
@@ -51,9 +53,15 @@ func (b *board) xyChainTestPosition(i int, excludeBit uint) (bool, error) {
 
 			targetBlit := b.blits[target]
 			if targetBlit&hint == hint {
-				if err := b.updateCandidates(target, i, ^hint); err != nil {
+				logEntry, err := b.updateCandidates(target, ^hint)
+				if err != nil {
 					return false, err
 				}
+
+				if logEntry != nil {
+					b.AddLog(technique, logEntry, "TODO")
+				}
+
 				updated = b.changed
 			}
 		}

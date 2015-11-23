@@ -51,6 +51,31 @@ func subtract(a []int, b []int) []int {
 	return list
 }
 
+func getPermutations(n int, pickList []int, curList []int) [][]int {
+	var output [][]int
+
+	for i := 0; i < len(pickList); i++ {
+		list := make([]int, len(curList))
+		copy(list, curList)              // get the source list
+		list = append(list, pickList[i]) // plus the current element
+
+		if len(list) == n {
+			// if this is the length we're looking for...
+			output = append(output, list)
+		} else {
+			// otherwise, call recursively
+			perms := getPermutations(n, pickList[i+1:], list)
+			if perms != nil {
+				for _, v := range perms {
+					output = append(output, v)
+				}
+			}
+		}
+	}
+
+	return output
+}
+
 func abs(x int) int {
 	switch {
 	case x < 0:

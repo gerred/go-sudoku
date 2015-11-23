@@ -1,6 +1,8 @@
 package main
 
 func (b *board) SolveXWing() error {
+	const technique = "X-WING"
+
 	// When there are
 	// - only two possible cells for a value in each of two different rows,
 	// - and these candidates lie also in the same columns,
@@ -14,7 +16,6 @@ func (b *board) SolveXWing() error {
 		}
 
 		blit := b.blits[i]
-		//c1 := getCoords(i)
 
 		// dims: operations using a row or column view as the starting point,
 		//       the inverse being the elimination op
@@ -52,9 +53,11 @@ func (b *board) SolveXWing() error {
 					}
 				}
 
+				var err error
+
 				// get cells with a matching pair in the target dimension (row or column)
 				var pairs []int
-				if err := dim.op(i, findPairs(&pairs)); err != nil {
+				if err = dim.op(i, findPairs(&pairs)); err != nil {
 					return err
 				}
 
@@ -62,19 +65,18 @@ func (b *board) SolveXWing() error {
 				if len(pairs) != 1 {
 					continue
 				}
-				// assigned the "locked pair position"
+				// assign the "locked pair position"
 				lockedPairPos := pairs[0]
-				//c2 := getCoords(lockedPairPos)
 
 				// find all pairs with the original cell in the inverse dimension
 				var pairs21 []int
-				if err := dim.op2(i, findPairs(&pairs21)); err != nil {
+				if err = dim.op2(i, findPairs(&pairs21)); err != nil {
 					return err
 				}
 
 				// find all pairs with the "locked pair" cell in the inverse dimension
 				var pairs22 []int
-				if err := dim.op2(lockedPairPos, findPairs(&pairs22)); err != nil {
+				if err = dim.op2(lockedPairPos, findPairs(&pairs22)); err != nil {
 					return err
 				}
 
@@ -85,7 +87,7 @@ func (b *board) SolveXWing() error {
 
 					// ensure value lives in container only twice, pairs are locked
 					var pairs2 []int
-					if err := dim.op(item21, findPairs(&pairs2)); err != nil {
+					if err = dim.op(item21, findPairs(&pairs2)); err != nil {
 						return err
 					}
 
@@ -106,10 +108,6 @@ func (b *board) SolveXWing() error {
 					}
 
 					for _, item22 := range shortList {
-						//c4 := getCoords(item22)
-
-						//logged := false
-
 						sourceList := []int{i, lockedPairPos, item21, item22}
 
 						removeHints := func(target int, source int) error {
@@ -119,28 +117,26 @@ func (b *board) SolveXWing() error {
 								}
 							}
 
-							/*if !logged && b.willUpdateCandidates(target, source, ^bit) {
-								logged = true
-								b.PrintHints()
-								fmt.Printf("xwing: val:%d\n", GetSingleBitValue(bit))
-								fmt.Printf("-- %#2v\n", c1)
-								fmt.Printf("-- %#2v\n", c2)
-								fmt.Printf("-- %#2v\n", c3)
-								fmt.Printf("-- %#2v\n", c4)
-							}*/
+							var logEntry *updateLog
+							if logEntry, err = b.updateCandidates(target, ^bit); err != nil {
+								return err
+							}
 
-							return b.updateCandidates(target, source, ^bit)
+							if logEntry != nil {
+								b.AddLog(technique, logEntry, "TODO")
+							}
+
+							return nil
 						}
 
 						for _, pos := range []int{i, lockedPairPos} {
-							if err := dim.op2(pos, removeHints); err != nil {
+							if err = dim.op2(pos, removeHints); err != nil {
 								return err
 							}
 						}
 
 						if b.changed {
 							// let simpler techniques take over
-							//b.Log(false, -1, "xwing: change detected")
 							return nil
 						}
 					}

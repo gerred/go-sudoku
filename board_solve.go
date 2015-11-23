@@ -1,22 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 func (b *board) SolveWithSolversList(solvers []solver) error {
 	// first iteration naked single
 	b.loading = true // turn off logging, this run is boring
 
-	if b.verbose {
-		b.PrintHints()
-		b.Log(false, -1, "NAKED SINGLE: FIRST ITERATION")
-	}
-
 	if err := b.SolveNakedSingle(); err != nil {
 		return err
-	}
-
-	if b.verbose {
-		b.PrintHints()
 	}
 
 	b.loading = false
@@ -76,10 +70,6 @@ mainLoop:
 	for !b.isSolved() {
 		b.changed = false
 		for _, solver := range solvers {
-			if b.verbose {
-				b.Log(false, -1, solver.name)
-			}
-
 			if err := solver.run(); err != nil {
 				return NewErrUnsolvable(err.Error())
 			}
@@ -124,83 +114,86 @@ func (b *board) SolvePositionNoValidate(pos int, val uint) {
 
 func (b *board) SolvePosition(pos int, val uint) error {
 	mask := uint(^(1 << (val - 1)))
-	if b.solved[pos] != 0 {
+	removeCandidates := func(target int, source int) error {
+		if _, opErr := b.updateCandidates(target, mask); opErr != nil {
+			return opErr
+		}
+		return nil
+	}
+
+	if err := b.solvePositionWithRemover(pos, val, removeCandidates); err != nil {
+		return NewErrUnsolvable("%#v val:%d - %s", getCoords(pos), val, err)
+	}
+
+	logLastBoardWithHints = b.GetTextBoardWithHints()
+	return nil
+}
+
+func (b *board) SolvePositionWithLog(technique, logFormat string, pos int, val uint) error {
+	mask := uint(^(1 << (val - 1)))
+
+	logFormat += fmt.Sprintf(" solved: %d/81", b.numSolved()+1)
+	logged := false
+	removeCandidates := func(target int, source int) error {
+		logEntry, opErr := b.updateCandidates(target, mask)
+		if opErr != nil {
+			return opErr
+		}
+
+		if logEntry != nil && technique != "" {
+			logged = true
+			b.AddLog(technique, logEntry, logFormat)
+		}
+		return nil
+	}
+
+	// writes header
+	b.AddLog(technique, nil, logFormat)
+
+	if err := b.solvePositionWithRemover(pos, val, removeCandidates); err != nil {
+		return NewErrUnsolvable("%#v val:%d - %s", getCoords(pos), val, err)
+	}
+
+	return nil
+}
+
+func (b *board) solvePositionWithRemover(pos int, val uint, candidateRemover inspector) error {
+	if b.solved[pos] != 0 && (!b.loading || b.solved[pos] != val) {
 		return NewErrUnsolvable("pos %d has value %d, tried to set with %d", pos, b.solved[pos], val)
 	}
 	b.solved[pos] = val
 	b.blits[pos] = 1 << (val - 1)
 
-	if b.verbose {
-		b.Log(true, pos, fmt.Sprintf("set value %d mask:%09b", val, mask&0x1FF))
-	}
-
 	if err := b.Validate(); err != nil {
 		return NewErrUnsolvable("%#v val:%d - %s", getCoords(pos), val, err)
 	}
 
-	if err := b.operateOnRCB(pos, b.removeCandidates(mask)); err != nil {
-		return NewErrUnsolvable(err.Error())
-	}
-
-	if !b.loading && b.verbose {
-		b.PrintHints()
+	if err := b.operateOnRCB(pos, candidateRemover); err != nil {
+		return NewErrUnsolvable("%#v val:%d - %s", getCoords(pos), val, err)
 	}
 
 	return nil
 }
 
-func (b *board) removeCandidates(mask uint) func(int, int) error {
-	return func(target int, source int) error {
-		if opErr := b.updateCandidates(target, source, mask); opErr != nil {
-			return opErr
-		}
-		return nil
+func (b *board) updateCandidates(target int, mask uint) (*updateLog, error) {
+	if b.solved[target] != 0 {
+		return nil, nil
 	}
-}
-
-func (b *board) updateCandidates(targetPos int, sourcePos int, mask uint) error {
-	if targetPos == sourcePos || b.solved[targetPos] != 0 {
-		return nil
-	}
-	oldBlit := b.blits[targetPos]
+	oldBlit := b.blits[target]
 	newBlit := oldBlit & mask
 	if newBlit != oldBlit {
 		b.changed = true
+
 		if newBlit == 0 {
-			return NewErrUnsolvable("tried to remove last candidate from %#2v", getCoords(targetPos))
+			_, file, line, _ := runtime.Caller(1)
+			return nil, NewErrUnsolvable("tried to remove last candidate from %#2v hints:%s mask:%s file:%s:%d",
+				getCoords(target), GetBitsString(oldBlit), GetBitsString(mask), file, line)
 		}
 
-		b.blits[targetPos] = newBlit
-		if b.verbose {
-			delta := oldBlit & ^newBlit
-			b.Log(false, targetPos, fmt.Sprintf("old hints: %-10s remove hint: %s remaining hints: %s", GetBitsString(oldBlit), GetBitsString(delta), GetBitsString(newBlit)))
-		}
-		return b.Validate()
+		b.blits[target] = newBlit
+
+		logEntry := updateLog{pos: target, oldHints: oldBlit, newHints: newBlit}
+		return &logEntry, b.Validate()
 	}
-	return nil
-}
-
-func getPermutations(n int, pickList []int, curList []int) [][]int {
-	var output [][]int
-
-	for i := 0; i < len(pickList); i++ {
-		list := make([]int, len(curList))
-		copy(list, curList)              // get the source list
-		list = append(list, pickList[i]) // plus the current element
-
-		if len(list) == n {
-			// if this is the length we're looking for...
-			output = append(output, list)
-		} else {
-			// otherwise, call recursively
-			perms := getPermutations(n, pickList[i+1:], list)
-			if perms != nil {
-				for _, v := range perms {
-					output = append(output, v)
-				}
-			}
-		}
-	}
-
-	return output
+	return nil, nil
 }

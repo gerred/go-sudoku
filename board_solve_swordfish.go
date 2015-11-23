@@ -290,6 +290,8 @@ func swordfishGetTwosAndThrees(v []int) [][]int {
 }
 
 func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set2 []int, set3 []int) error {
+	const technique = "SWORDFISH"
+
 	var overlap []int
 	overlap = append(overlap, set1...)
 	overlap = append(overlap, set2...)
@@ -311,7 +313,16 @@ func (b *board) swordfishApply(sf swordfishOperation, hint uint, set1 []int, set
 				}
 			}
 
-			return b.updateCandidates(target, source, ^hint)
+			logEntry, err := b.updateCandidates(target, ^hint)
+			if err != nil {
+				return err
+			}
+
+			if logEntry != nil {
+				b.AddLog(technique, logEntry, "TODO")
+			}
+
+			return nil
 		}
 
 		if err := sf.opInverted(item, removeHint); err != nil {

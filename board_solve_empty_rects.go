@@ -63,11 +63,8 @@ func (b *board) getIntersection(pos1 int, pos2 int, excludePos int) (int, error)
 
 func (b *board) SolveEmptyRectangles() error {
 	// http://www.sudokuwiki.org/Empty_Rectangles
-	// here's the basic idea of this one:
-	// - a box which has a row and/or column with hints
-	//   can have those hints eliminated if the row/column is tied to
-	//   a strongly linked bi-value pair.
-	// I'll come up with a better English description in a minute.
+
+	const technique = "EMPTY RECTANGLES"
 
 	// find a candidate box
 	prevBox := -1
@@ -91,7 +88,9 @@ func (b *board) SolveEmptyRectangles() error {
 			return nil
 		}
 
-		if err := b.operateOnBox(i, getBoxCells); err != nil {
+		var err error
+
+		if err = b.operateOnBox(i, getBoxCells); err != nil {
 			return err
 		}
 
@@ -175,12 +174,12 @@ func (b *board) SolveEmptyRectangles() error {
 				}
 
 				var rowCands []int
-				if err := b.operateOnRow(i+form.intersectOffset, checkCands(&rowCands)); err != nil {
+				if err = b.operateOnRow(i+form.intersectOffset, checkCands(&rowCands)); err != nil {
 					return err
 				}
 
 				var colCands []int
-				if err := b.operateOnColumn(i+form.intersectOffset, checkCands(&colCands)); err != nil {
+				if err = b.operateOnColumn(i+form.intersectOffset, checkCands(&colCands)); err != nil {
 					return err
 				}
 
@@ -197,9 +196,10 @@ func (b *board) SolveEmptyRectangles() error {
 					}
 				}
 
+				var logEntry *updateLog
 				for _, rowCand := range rowCands {
 					var links []int
-					if err := b.operateOnColumn(rowCand, getCellsWithHint(&links)); err != nil {
+					if err = b.operateOnColumn(rowCand, getCellsWithHint(&links)); err != nil {
 						return err
 					}
 
@@ -209,10 +209,15 @@ func (b *board) SolveEmptyRectangles() error {
 							return err
 						}
 
-						// in the target is in our box it's not a candidate. ignore and move on.
+						// only if the target is not in our box is it a candidate.
 						if getCoords(target).box != c1.box {
-							if err := b.updateCandidates(target, i+form.intersectOffset, ^hint); err != nil {
+							if logEntry, err = b.updateCandidates(target, ^hint); err != nil {
 								return err
+							}
+
+							if logEntry != nil {
+								// i+form.intersectOffset
+								// TODO: do something with logEntry
 							}
 						}
 					}
@@ -220,7 +225,7 @@ func (b *board) SolveEmptyRectangles() error {
 
 				for _, colCand := range colCands {
 					var links []int
-					if err := b.operateOnRow(colCand, getCellsWithHint(&links)); err != nil {
+					if err = b.operateOnRow(colCand, getCellsWithHint(&links)); err != nil {
 						return err
 					}
 
@@ -230,10 +235,15 @@ func (b *board) SolveEmptyRectangles() error {
 							return err
 						}
 
-						// in the target is in our box it's not a candidate. ignore and move on.
+						// only if the target is not in our box is it a a candidate.
 						if getCoords(target).box != c1.box {
-							if err := b.updateCandidates(target, i+form.intersectOffset, ^hint); err != nil {
+							if logEntry, err = b.updateCandidates(target, ^hint); err != nil {
 								return err
+							}
+
+							if logEntry != nil {
+								// i+form.intersectOffset
+								// TODO: do something with logEntry
 							}
 						}
 					}
