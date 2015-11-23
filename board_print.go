@@ -3,6 +3,21 @@ package main
 import "fmt"
 
 func (b *board) Print() {
+	for i := 0; i < len(b.solved); i++ {
+		if b.solved[i] == 0 {
+			fmt.Print("_")
+		} else {
+			fmt.Printf("%d", b.solved[i])
+		}
+		if (i+1)%9 == 0 {
+			fmt.Println()
+		} else {
+			fmt.Print(" ")
+		}
+	}
+}
+
+func (b *board) PrintPretty() {
 	fmt.Print("|-------|-------|-------|\n| ")
 	for i := 0; i < len(b.solved); i++ {
 		if b.solved[i] == 0 {
@@ -26,8 +41,8 @@ func (b *board) Print() {
 	}
 }
 
-func (b *board) PrintURL() {
-	for i := 0; i < len(b.solved); i++ {
+func (b *board) PrintCompact() {
+	for i := 0; i < 81; i++ {
 		fmt.Print(b.solved[i])
 	}
 	fmt.Println()

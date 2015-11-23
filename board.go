@@ -109,7 +109,7 @@ func (b *board) operateOnCommon(pos1 int, pos2 int, op inspector) error {
 	return nil
 }
 
-func readBoard(rd io.Reader) (*board, error) {
+func readBoard(rd io.Reader) ([]byte, error) {
 	r := bufio.NewReader(rd)
 
 	var line string
@@ -128,9 +128,11 @@ func readBoard(rd io.Reader) (*board, error) {
 
 		for j, r := range line {
 			if j%2 == 0 {
-				var v int
-				if v, err = strconv.Atoi(string(r)); err != nil || v == 0 {
-					return nil, fmt.Errorf("line %d, pos %d: expected: digit > 0 or '_', actual: %q. line: %q", i+1, j+1, r, line)
+				if r != '_' {
+					var v int
+					if v, err = strconv.Atoi(string(r)); err != nil || v == 0 {
+						return nil, fmt.Errorf("line %d, pos %d: expected: digit > 0 or '_', actual: %q. line: %q", i+1, j+1, r, line)
+					}
 				}
 				buf.WriteRune(r)
 			} else {
@@ -145,7 +147,7 @@ func readBoard(rd io.Reader) (*board, error) {
 		}
 	}
 
-	return loadBoard(buf.Bytes())
+	return buf.Bytes(), nil
 }
 
 func getBoard(fileName string) (*board, error) {

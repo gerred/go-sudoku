@@ -98,7 +98,7 @@ mainLoop:
 		for _, solver := range solvers {
 			if solver.printBoard {
 				b.PrintHints()
-				b.PrintURL()
+				b.PrintCompact()
 			}
 
 			if b.verbose {
@@ -127,7 +127,7 @@ mainLoop:
 
 				if solver.printBoard || b.verbose {
 					b.PrintHints()
-					b.PrintURL()
+					b.PrintCompact()
 				}
 
 				continue mainLoop

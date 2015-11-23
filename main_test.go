@@ -285,7 +285,7 @@ func TestBoards(t *testing.T) {
 
 		if !board.isSolved() {
 			board.PrintHints()
-			board.PrintURL()
+			board.PrintCompact()
 			t.Fatalf("%s: could not solve", file)
 			return
 		}

@@ -20,50 +20,16 @@ func init() {
 }
 
 func main() {
-
-	var err error
-
-	/*puzzles := bytes.Buffer{}
-
-	for i := 174; i > 0; i-- {
-		fmt.Printf("%d\n", i)
-		resp, err := http.DefaultClient.Get("http://www.sudokuwiki.org/feed/scanraid/ASSudokuWeekly.asp?wp=" + strconv.Itoa(i))
-		if err != nil {
-			log.Fatal(err)
-		}
-		r := bufio.NewReader(resp.Body)
-		find := "load_from_script(false,'e"
-		for {
-			line, err := r.ReadString('\n')
-			if line == "" || (err != nil && err != io.EOF) {
-				break
-			}
-			idx := strings.Index(line, find)
-			if idx != -1 {
-				line = line[idx+len(find) : len(line)-7]
-				_, err = puzzles.WriteString(line + "\n")
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				break
-			}
-		}
-	}
-
-	err := ioutil.WriteFile("weekly_unsolvable.txt", puzzles.Bytes(), 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return*/
-
 	flags := flag.FlagSet{}
 	profile := flags.Bool("profile", false, "true profile cpu/mem")
 	runFile := flags.String("file", "", "file containing puzzle(s)")
 	maxPuzzles := flags.Int("max-puzzles", -1, "max puzzles to solve when multiple present in a file")
 	readStats := flags.String("read-stats", "", "read stats from long run, print time taken per puzzle")
+	printTime := flags.Bool("time", false, "print time taken to solve")
+
+	var err error
 	if err := flags.Parse(os.Args[1:]); err != nil {
+		flags.PrintDefaults()
 		log.Fatal(err)
 	}
 
@@ -75,13 +41,6 @@ func main() {
 			log.Fatal(err)
 		}
 		return
-	}
-
-	start := time.Now()
-	if *profile {
-		if err = startProfile(); err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	//printCompactToStandard("080009743050008010010000000800005000000804000000300006000000070030500080972400050")
@@ -114,22 +73,32 @@ func main() {
 		}
 	}
 
-	var b *board
-	if b, err = readBoard(os.Stdin); err != nil {
-		log.Fatal(err)
+	if *profile {
+		if err = startProfile(); err != nil {
+			log.Fatal(err)
+		}
 	}
-	if err = b.Solve(); err != nil {
+
+	// read board from stdin before starting timer
+	var boardBytes []byte
+	if boardBytes, err = readBoard(os.Stdin); err != nil {
 		log.Fatal(err)
 	}
 
-	//start := time.Now()
-	//runFile("./test_files/29_ben.txt")
-	//runFile("./test_files/12_tough_20151107_173.txt")
-	//runFile("./test_files/input.txt")
-	//runFile("./test_files/input_no_solution.txt")
-	//runList("./test_files/top95.txt", *max_iterations)
-	//runList("./test_files/weekly_unsolvable.txt", *max_iterations)
-	//runList("./test_files/sudokus.txt", *max_iterations)
+	start := time.Now()
+
+	var b *board
+	if b, err = loadBoard(boardBytes); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = b.Solve(); err != nil {
+		// TODO: checking for a specific type of error would be ideal
+		fmt.Printf("UNSOLVABLE")
+		return
+	}
+
+	b.Print()
 
 	//generate()
 
@@ -138,7 +107,10 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	fmt.Printf("%v\n", time.Since(start))
+
+	if *printTime {
+		fmt.Printf("%v\n", time.Since(start))
+	}
 }
 
 func startProfile() error {
@@ -232,10 +204,10 @@ func (b *board) SolveSAT() error {
 	}
 
 	if !b.CountSolutions {
-		fmt.Printf("solved with SAT\n")
+		//fmt.Printf("solved with SAT\n")
 	} else {
 		b.SolutionCount = len(slns)
-		fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
+		//fmt.Printf("solved with SAT. solution count: %d\n", len(slns))
 	}
 
 	sln1 := slns[0]
@@ -268,21 +240,14 @@ func runFile(fileName string) {
 		return
 	}
 
-	err = board.Solve()
-	if err != nil {
+	if err = board.Solve(); err != nil {
 		fmt.Printf("ERROR - %s\n", err)
 		return
 	}
 
-	/*if err = board.Solve(); err != nil {
-		fmt.Printf("ERROR - %s\n", err)
-		board.PrintHints()
-		return
-	}*/
-
 	if !board.isSolved() {
 		board.PrintHints()
-		board.PrintURL()
+		board.PrintCompact()
 		fmt.Println("could not solve")
 	} else {
 		board.Print()
@@ -313,14 +278,14 @@ func runList(fileName string, maxPuzzles int) error {
 			fmt.Printf("%s\n", line)
 			b2, err2 := loadBoard([]byte(line))
 			if err2 != nil {
-				b2.PrintURL()
+				b2.PrintCompact()
 			}
 			return fmt.Errorf("%s. Puzzle # %d", err, i+1)
 		}
 
 		if !board.isSolved() {
 			board.PrintHints()
-			board.PrintURL()
+			board.PrintCompact()
 			return fmt.Errorf("could not solve Puzzle # %d\n", i+1)
 		}
 
