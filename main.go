@@ -10,7 +10,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -25,15 +24,13 @@ func main() {
 	maxPuzzles := flags.Int("max-puzzles", -1, "max puzzles to solve when multiple present in a file")
 	showSteps := flags.Bool("steps", false, "show solve steps")
 	showSolveTime := flags.Bool("time", false, "print time taken to solve or generate")
-	generate := flags.String("generate", "", "generate a puzzle. options are: easy, medium, hard, evil")
+	generate := flags.Bool("generate", false, "generate a random puzzle with 1 unique solution (unfortnately no difficulty selection)")
 
 	var err error
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		flags.PrintDefaults()
 		log.Fatal(err)
 	}
-
-	_ = maxPuzzles
 
 	if *profile {
 		if err = startProfiler(); err != nil {
@@ -53,33 +50,13 @@ func main() {
 		}
 	}()
 
-	if *generate != "" {
+	if *generate {
 		start = time.Now()
-		var min, max int
-		*generate = strings.ToLower(*generate)
-		switch *generate {
-		case "easy":
-			min = 0
-			max = 3
-		case "medium":
-			min = 4
-			max = 7
-		case "hard":
-			min = 9
-			max = 15
-		case "evil":
-			min = 16
-			max = 99
-		default:
-			flags.PrintDefaults()
-			fmt.Println("\nvalid options for generate are: easy, medium, hard, evil")
-			return
-		}
-		var gb *board
-		if gb, err = generatePuzzle(min, max); err != nil {
+		b, err := generatePuzzle(0, 0)
+		if err != nil {
 			log.Fatal(err)
 		}
-		gb.Print()
+		b.Print()
 		return
 	}
 

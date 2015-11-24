@@ -2,10 +2,7 @@ package main
 
 // The generate/grading function is a work in progress.
 
-import (
-	"fmt"
-	"math/rand"
-)
+import "math/rand"
 
 func getValidBoard() (*board, error) {
 	b, err := loadBoard([]byte("000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
@@ -42,7 +39,6 @@ func generatePuzzle(minDifficulty, maxDifficulty int) (*board, error) {
 		for b == nil || err != nil {
 			b, err = getValidBoard()
 		}
-		fmt.Printf("--------\n")
 		b2, err := digHoles(b)
 		if err != nil {
 			return nil, err
@@ -52,14 +48,11 @@ func generatePuzzle(minDifficulty, maxDifficulty int) (*board, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("--------\n")
 		if err = b3.SolveWithSolversList(b.getGeneratorSolvers()); err != nil {
 			return nil, err
 		}
 
-		if b3.difficulty >= minDifficulty && b3.difficulty <= maxDifficulty {
-			return b2, nil
-		}
+		return b2, nil
 	}
 }
 
