@@ -10,6 +10,8 @@ or, more interestingly:
 
 `go-sudoku -steps < input.txt`
 
+[See example](https://gist.githubusercontent.com/judwhite/792d3336dd4398c50186/raw/4a301869d7b6699e678931cef80f4e8c79137791/sudoku-steps.txt)
+
 ## Board input format
 
 ```
