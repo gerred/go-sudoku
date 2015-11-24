@@ -28,7 +28,6 @@ func main() {
 
 	var err error
 	if err := flags.Parse(os.Args[1:]); err != nil {
-		flags.PrintDefaults()
 		log.Fatal(err)
 	}
 
