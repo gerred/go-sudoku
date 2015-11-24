@@ -103,10 +103,6 @@ func TestEmptyRects3(t *testing.T) {
 	if !b.changed {
 		t.Fatal("board not changed")
 	}
-
-	// TODO: Asserts
-
-	//testHint(t, b, 3, 8, []uint{7, 8})
 }
 
 func TestXYChain(t *testing.T) {
@@ -352,14 +348,10 @@ func Test13329(t *testing.T) {
 	//testHint(t, b, 5, 1, []uint{3, 4, 6})
 	//testHint(t, b, 8, 2, []uint{2, 4, 9})
 
-	// act
+	// act / assert
 	if err := b.Solve(); err != nil {
 		t.Fatal(err)
 	}
-
-	// assert
-
-	// TODO
 }
 
 func TestXWing(t *testing.T) {
@@ -403,7 +395,7 @@ func TestXWing(t *testing.T) {
 	//b.quiet = true
 	//b.verbose = true
 
-	// act
+	// act / assert
 	if err := b.SolveXWing(); err != nil {
 		b.PrintHints()
 		t.Fatal(err)
@@ -414,10 +406,6 @@ func TestXWing(t *testing.T) {
 		b.PrintHints()
 		t.Fatal(err)
 	}
-
-	// assert
-
-	// TODO... maybe. unicorn advises against it.
 }
 
 func (b *board) getSimpleSolvers() []solver {

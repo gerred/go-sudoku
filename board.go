@@ -19,6 +19,7 @@ type board struct {
 	countSolutions bool
 	solutionCount  int
 	maxSolutions   int
+	difficulty     int
 }
 
 type coords struct {

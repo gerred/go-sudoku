@@ -20,12 +20,12 @@ func init() {
 
 func main() {
 	flags := flag.FlagSet{}
-	profile := flags.Bool("profile", false, "profile cpu/mem")
-	runFile := flags.String("file", "", "file containing puzzle(s)")
+	profile := flags.Bool("profile", false, "profile cpu/mem, creates go-sudoku.pprof and go-sudoku.mprof")
+	runFile := flags.String("file", "", "bulk run puzzle(s) in compact 81-char form")
 	maxPuzzles := flags.Int("max-puzzles", -1, "max puzzles to solve when multiple present in a file")
-	//readStats := flags.String("read-stats", "", "read stats from long run, print time taken per puzzle")
 	showSteps := flags.Bool("steps", false, "show solve steps")
-	showSolveTime := flags.Bool("time", false, "print time taken to solve")
+	showSolveTime := flags.Bool("time", false, "print time taken to solve or generate")
+	generate := flags.String("generate", "", "generate a puzzle. options are: easy, medium, hard, evil")
 
 	var err error
 	if err := flags.Parse(os.Args[1:]); err != nil {
@@ -34,14 +34,6 @@ func main() {
 	}
 
 	_ = maxPuzzles
-
-	/*if *readStats != "" {
-		err := readStatsFile(*readStats)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
-	}*/
 
 	if *profile {
 		if err = startProfiler(); err != nil {
@@ -60,6 +52,36 @@ func main() {
 			}
 		}
 	}()
+
+	if *generate != "" {
+		start = time.Now()
+		var min, max int
+		*generate = strings.ToLower(*generate)
+		switch *generate {
+		case "easy":
+			min = 0
+			max = 3
+		case "medium":
+			min = 4
+			max = 7
+		case "hard":
+			min = 9
+			max = 15
+		case "evil":
+			min = 16
+			max = 99
+		default:
+			flags.PrintDefaults()
+			fmt.Println("\nvalid options for generate are: easy, medium, hard, evil")
+			return
+		}
+		var gb *board
+		if gb, err = generatePuzzle(min, max); err != nil {
+			log.Fatal(err)
+		}
+		gb.Print()
+		return
+	}
 
 	if *runFile == "" {
 		// read board from stdin (before starting timer)
@@ -98,60 +120,6 @@ func main() {
 		if err := runList(*runFile, *maxPuzzles, *showSolveTime, *showSteps); err != nil {
 			log.Fatal(err)
 		}
-	}
-}
-
-func readStatsFile(fileName string) error {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	const prefix = "Solve time: "
-
-	r := bufio.NewReader(f)
-	line, err := r.ReadString('\n')
-	if err != nil && err != io.EOF {
-		return err
-	}
-
-	puzzle := 1
-	for line != "" {
-		if strings.HasPrefix(line, prefix) {
-			line = strings.Trim(line[len(prefix):], " \n\r")
-			var d time.Duration
-			if d, err = time.ParseDuration(line); err != nil {
-				return err
-			}
-			fmt.Printf("%d\t%v\n", puzzle, d.Nanoseconds()/int64(time.Millisecond))
-			puzzle++
-		}
-		if line, err = r.ReadString('\n'); err != nil && err != io.EOF {
-			return err
-		}
-	}
-	return nil
-}
-
-func runFile(fileName string) {
-	board, err := getBoard(fileName)
-	if err != nil {
-		fmt.Printf("ERROR - %s\n", err)
-		return
-	}
-
-	if err = board.Solve(); err != nil {
-		fmt.Printf("ERROR - %s\n", err)
-		return
-	}
-
-	if !board.isSolved() {
-		board.PrintHints()
-		board.PrintCompact()
-		fmt.Println("could not solve")
-	} else {
-		board.Print()
 	}
 }
 
@@ -211,4 +179,25 @@ func runList(fileName string, maxPuzzles int, showSolveTime, showSteps bool) err
 		}
 	}
 	return nil
+}
+
+func runFile(fileName string) {
+	board, err := getBoard(fileName)
+	if err != nil {
+		fmt.Printf("ERROR - %s\n", err)
+		return
+	}
+
+	if err = board.Solve(); err != nil {
+		fmt.Printf("ERROR - %s\n", err)
+		return
+	}
+
+	if !board.isSolved() {
+		board.PrintHints()
+		board.PrintCompact()
+		fmt.Println("could not solve")
+	} else {
+		board.Print()
+	}
 }

@@ -9,7 +9,7 @@ fi
 
 echo "Checking errcheck..."
 # buffer.WriteString always returns nil error; panics if buffer too large
-errRes=$(./tools/errcheck -blank -ignore 'Write[String|Rune],os:Close')
+errRes=$(./tools/errcheck -blank -ignore 'Write[String|Rune|Byte],os:Close')
 # TODO: add -asserts flag (maybe)
 if [ $? -ne 0 ]; then
 	echo -e "errcheck checking failed:\n${errRes}"

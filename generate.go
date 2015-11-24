@@ -1,5 +1,7 @@
 package main
 
+// The generate/grading function is a work in progress.
+
 import (
 	"fmt"
 	"math/rand"
@@ -25,7 +27,7 @@ func getValidBoard() (*board, error) {
 			return nil, err
 		}
 
-		err = b.Solve()
+		err = b.SolveWithSolversList(b.getGeneratorSolvers())
 		if err != nil {
 			return nil, err
 		}
@@ -33,42 +35,41 @@ func getValidBoard() (*board, error) {
 	return b, nil
 }
 
-func generate() error {
-	var err error
-	var b *board
-	for b == nil || err != nil {
-		b, err = getValidBoard()
+func generatePuzzle(minDifficulty, maxDifficulty int) (*board, error) {
+	for {
+		var err error
+		var b *board
+		for b == nil || err != nil {
+			b, err = getValidBoard()
+		}
+		fmt.Printf("--------\n")
+		b2, err := digHoles(b)
+		if err != nil {
+			return nil, err
+		}
+
+		b3, err := loadBoard([]byte(b2.GetCompact()))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("--------\n")
+		if err = b3.SolveWithSolversList(b.getGeneratorSolvers()); err != nil {
+			return nil, err
+		}
+
+		if b3.difficulty >= minDifficulty && b3.difficulty <= maxDifficulty {
+			return b2, nil
+		}
 	}
-
-	//b.PrintHints()
-
-	err = digHoles(b)
-	if err != nil {
-		return err
-	}
-
-	/*b.CountSolutions = true
-
-	err = b.SolveSAT()
-	b.Print()
-	if err != nil {
-		log.Fatal(err)
-	}*/
-
-	return nil
 }
 
-func digHoles(b *board) error {
-	var err error
+func digHoles(b *board) (*board, error) {
 	b2 := &board{solved: b.solved, blits: b.blits}
-	if err != nil {
-		return err
-	}
 
-	step := 1
+	step := 4
 	failures := 0
 	check := make(map[int]interface{})
-	for len(check) != 81 {
+	for len(check) != 81 && b2.numSolved() >= 27 {
 		goodSolved := b2.solved
 		goodBlits := b2.blits
 
@@ -94,6 +95,7 @@ func digHoles(b *board) error {
 		}
 
 		if step == 4 {
+			// dig out 4
 			pos2 := coords.row*9 + secondCol
 			pos3 := secondRow*9 + coords.col
 			pos4 := secondRow*9 + secondCol
@@ -107,6 +109,7 @@ func digHoles(b *board) error {
 			b2.solved[pos3] = 0
 			b2.solved[pos4] = 0
 		} else if step == 2 {
+			// dig out 2
 			pos2 := secondRow*9 + secondCol
 
 			if b2.solved[pos2] == 0 {
@@ -116,56 +119,31 @@ func digHoles(b *board) error {
 			b2.solved[pos1] = 0
 			b2.solved[pos2] = 0
 		} else {
+			// dig out 1
 			b2.solved[pos1] = 0
 		}
 
-		for j := 0; j < 81; j++ {
-			if b2.solved[j] != 0 {
-				continue
-			}
-			newHints, err := b2.getHints(j)
-			if err != nil {
-				return err
-			}
-			b2.blits[j] = newHints
-		}
-
-		b3 := board{solved: b2.solved, blits: b2.blits, countSolutions: true, maxSolutions: 2}
-		err = b3.Solve()
+		// attempt to solve using selected difficulty
+		b3, err := loadBoard([]byte(b2.GetCompact()))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		//fmt.Printf("sln count: %d\n", b3.SolutionCount)
+		err = b3.SolveWithSolversList(b.getGeneratorSolvers())
 
-		if b3.solutionCount > 1 {
-			//return fmt.Errorf("bad dig, more than 1 solution")
+		if err != nil || !b3.isSolved() {
+			// bad dig, doesn't fit difficulty or more than one solution
 			b2.solved = goodSolved
 			b2.blits = goodBlits
 			failures++
-			if step > 1 && failures == 5 {
+			if step > 1 && failures == 2 {
 				failures = 0
 				step /= 2
 			}
-		} else {
-			//b2.PrintHints()
 		}
 	}
 
-	fmt.Printf("-----------------\n")
-	b2.Print()
-	b2.PrintCompact()
-	fmt.Printf("hint count: %d\n", b2.numSolved())
-	b2.countSolutions = true
-	b2.maxSolutions = 2
-	if err = b2.Solve(); err != nil {
-		return err
-	}
-	fmt.Printf("sln count: %d\n", b2.solutionCount)
-	//b2.PrintHints()
-	b2.Print()
-
-	return nil
+	return b2, nil
 }
 
 func (b *board) getHints(pos int) (uint, error) {
@@ -199,4 +177,15 @@ func (b *board) getHints(pos int) (uint, error) {
 		blits |= 1 << (k - 1)
 	}
 	return blits, nil
+}
+
+func (b *board) getGeneratorSolvers() []solver {
+	var solvers []solver
+	for _, solver := range b.getSolvers() {
+		if solver.name != "SAT" {
+			solvers = append(solvers, solver)
+		}
+	}
+
+	return solvers
 }

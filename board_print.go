@@ -45,10 +45,15 @@ func (b *board) PrintPretty() {
 }
 
 func (b *board) PrintCompact() {
+	fmt.Println(b.GetCompact())
+}
+
+func (b *board) GetCompact() string {
+	buf := bytes.NewBufferString("")
 	for i := 0; i < 81; i++ {
-		fmt.Print(b.solved[i])
+		buf.WriteByte('0' + byte(b.solved[i]))
 	}
-	fmt.Println()
+	return buf.String()
 }
 
 func (b *board) PrintHints() {

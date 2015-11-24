@@ -27,31 +27,32 @@ func (b *board) Solve() error {
 }
 
 type solver struct {
-	run  func() error
-	name string
+	run        func() error
+	name       string
+	difficulty int
 }
 
 func (b *board) getSolvers() []solver {
 	solvers := []solver{
-		{name: "NAKED SINGLE", run: b.SolveNakedSingle},
-		{name: "HIDDEN SINGLE", run: b.SolveHiddenSingle},
-		{name: "NAKED PAIR", run: b.getSolverN(b.SolveNakedN, 2)},
-		{name: "NAKED TRIPLE", run: b.getSolverN(b.SolveNakedN, 3)},
-		{name: "NAKED QUAD", run: b.getSolverN(b.SolveNakedN, 4)},
-		{name: "NAKED QUINT", run: b.getSolverN(b.SolveNakedN, 5)},
-		{name: "HIDDEN PAIR", run: b.getSolverN(b.SolveHiddenN, 2)},
-		{name: "HIDDEN TRIPLE", run: b.getSolverN(b.SolveHiddenN, 3)},
-		{name: "HIDDEN QUAD", run: b.getSolverN(b.SolveHiddenN, 4)},
-		{name: "HIDDEN QUINT", run: b.getSolverN(b.SolveHiddenN, 5)},
-		{name: "POINTING PAIR AND TRIPLE REDUCTION", run: b.SolvePointingPairAndTripleReduction},
-		{name: "BOX LINE", run: b.SolveBoxLine},
-		{name: "X-WING", run: b.SolveXWing},
-		{name: "SIMPLE-COLORING", run: b.SolveSimpleColoring},
-		{name: "Y-WING", run: b.SolveYWing},
-		{name: "SWORDFISH", run: b.SolveSwordFish},
-		{name: "XY-CHAIN", run: b.SolveXYChain},
-		{name: "EMPTY RECTANGLES", run: b.SolveEmptyRectangles},
-		{name: "SAT", run: b.SolveSAT},
+		{name: "NAKED SINGLE", difficulty: 0, run: b.SolveNakedSingle},
+		{name: "HIDDEN SINGLE", difficulty: 1, run: b.SolveHiddenSingle},
+		{name: "NAKED PAIR", difficulty: 1, run: b.getSolverN(b.SolveNakedN, 2)},
+		{name: "NAKED TRIPLE", difficulty: 3, run: b.getSolverN(b.SolveNakedN, 3)},
+		{name: "NAKED QUAD", difficulty: 6, run: b.getSolverN(b.SolveNakedN, 4)},
+		{name: "NAKED QUINT", difficulty: 6, run: b.getSolverN(b.SolveNakedN, 5)},
+		{name: "HIDDEN PAIR", difficulty: 1, run: b.getSolverN(b.SolveHiddenN, 2)},
+		{name: "HIDDEN TRIPLE", difficulty: 4, run: b.getSolverN(b.SolveHiddenN, 3)},
+		{name: "HIDDEN QUAD", difficulty: 8, run: b.getSolverN(b.SolveHiddenN, 4)},
+		{name: "HIDDEN QUINT", difficulty: 8, run: b.getSolverN(b.SolveHiddenN, 5)},
+		{name: "POINTING PAIR AND TRIPLE REDUCTION", difficulty: 10, run: b.SolvePointingPairAndTripleReduction},
+		{name: "BOX LINE", difficulty: 10, run: b.SolveBoxLine},
+		{name: "X-WING", difficulty: 10, run: b.SolveXWing},
+		{name: "SIMPLE-COLORING", difficulty: 10, run: b.SolveSimpleColoring},
+		{name: "Y-WING", difficulty: 10, run: b.SolveYWing},
+		{name: "SWORDFISH", difficulty: 10, run: b.SolveSwordFish},
+		{name: "XY-CHAIN", difficulty: 10, run: b.SolveXYChain},
+		{name: "EMPTY RECTANGLES", difficulty: 10, run: b.SolveEmptyRectangles},
+		{name: "SAT", difficulty: 100, run: b.SolveSAT},
 	}
 
 	return solvers
@@ -75,13 +76,15 @@ mainLoop:
 				return NewErrUnsolvable(err.Error())
 			}
 			if b.isSolved() {
+				b.updateDifficulty(solver.difficulty)
 				return nil
 			}
 			if b.changed {
+				b.updateDifficulty(solver.difficulty)
 				continue mainLoop
 			}
 		}
-		// for tests we may intentionally do an incomplete solve
+		// for tests and generation we may intentionally do an incomplete solve
 		break
 	}
 	return nil
@@ -187,4 +190,8 @@ func (b *board) updateCandidates(target int, mask uint) (*updateLog, error) {
 		return &logEntry, b.Validate()
 	}
 	return nil, nil
+}
+
+func (b *board) updateDifficulty(difficulty int) {
+	b.difficulty += difficulty
 }
